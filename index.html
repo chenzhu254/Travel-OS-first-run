@@ -1,0 +1,288 @@
+<!doctype html>
+<html lang="zh-Hant" data-theme="light">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <meta name="theme-color" content="#f5f1e7" />
+    <meta name="description" content="Travel OS — 將行程、航班、住宿與費用整理在自己的旅遊工作台。" />
+    <link rel="manifest" href="./manifest.webmanifest" />
+    <title>Travel OS</title>
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 64 64%22><rect width=%2264%22 height=%2264%22 rx=%2214%22 fill=%22%23243e35%22/><path d=%22M18 38c9-15 20-19 29-11-8 0-13 5-15 15%22 fill=%22none%22 stroke=%22%23fff%22 stroke-width=%225%22 stroke-linecap=%22round%22/></svg>" />
+    <script type="module" src="/src/app.js"></script>
+  </head>
+  <body>
+    <a class="skip-link" href="#main">跳到主要內容</a>
+    <header class="topbar">
+      <a class="brand" href="./" aria-label="Travel OS 首頁"><span class="brand-mark">T</span><span><strong>Travel OS</strong><small>YOUR TRIP, YOUR DATA</small></span></a>
+      <div class="top-actions">
+        <span id="save-status" class="status" role="status">本機模式</span>
+        <button id="settings-button" class="icon-button" type="button" aria-label="連線與設定">設定</button>
+        <button id="theme-button" class="icon-button" type="button" aria-label="切換深色模式">◐</button>
+      </div>
+    </header>
+
+    <main id="main" class="shell">
+      <section id="welcome" class="welcome" aria-labelledby="welcome-title">
+        <p class="eyebrow">CLOUD-SYNC TRAVEL PLANNER</p>
+        <h1 id="welcome-title">把旅程整理成一張清楚的路線圖。</h1>
+        <p>自行部署版本建議先完成雲端同步設定，讓旅程可以跨裝置與多人協作；本機模式保留給試用、離線或暫時不連雲端的情境。</p>
+        <div class="welcome-actions">
+          <button id="cloud-setup-button" class="primary" data-open="settings-dialog" type="button">設定雲端同步</button>
+          <button id="local-start-button" class="secondary" data-open="trip-dialog" type="button">先用本機模式</button>
+        </div>
+      </section>
+
+      <section id="workspace" hidden>
+        <header class="trip-header">
+          <div>
+            <p id="trip-dates" class="eyebrow"></p>
+            <h1 id="trip-title"></h1>
+            <p id="trip-destination" class="muted"></p>
+          </div>
+          <div class="header-actions">
+            <select id="trip-select" aria-label="切換旅程"></select>
+            <button class="secondary" data-open="trip-dialog" type="button">新增旅程</button>
+          </div>
+        </header>
+
+        <nav id="day-tabs" class="day-tabs" aria-label="旅程日期"></nav>
+
+        <div class="workspace-grid">
+          <section class="panel timeline-panel" aria-labelledby="day-heading">
+            <div class="panel-heading">
+              <div><p class="eyebrow">DAILY PLAN</p><h2 id="day-heading">每日行程</h2></div>
+              <button class="primary small" data-open="item-dialog" type="button">新增安排</button>
+            </div>
+            <section id="next-stop" class="next-stop" aria-labelledby="next-stop-heading" hidden>
+              <p class="eyebrow">NEXT · 下一個安排</p>
+              <h3 id="next-stop-heading"></h3>
+              <div id="next-stop-details"></div>
+            </section>
+            <ol id="timeline" class="timeline"></ol>
+            <div id="timeline-empty" class="empty-state">
+              <span aria-hidden="true">＋</span><h3>這一天還沒有安排</h3><p>加入景點、航班、住宿或交通，開始排出順路的一天。</p>
+            </div>
+          </section>
+
+          <aside class="side-stack">
+            <section class="panel summary-panel" aria-labelledby="summary-heading">
+              <div class="panel-heading"><div><p class="eyebrow">OVERVIEW</p><h2 id="summary-heading">旅程摘要</h2></div></div>
+              <dl class="summary-grid">
+                <div><dt>天數</dt><dd id="summary-days">0</dd></div>
+                <div><dt>安排</dt><dd id="summary-items">0</dd></div>
+                <div><dt>群組</dt><dd id="summary-groups">0</dd></div>
+                <div><dt>費用</dt><dd id="summary-cost">—</dd></div>
+              </dl>
+            </section>
+            <section class="panel group-panel" aria-labelledby="group-heading">
+              <div class="panel-heading"><div><p class="eyebrow">GROUPS</p><h2 id="group-heading">同行群組</h2></div><button class="text-button" data-open="group-dialog" type="button">新增</button></div>
+              <ul id="group-list" class="plain-list"></ul>
+              <p id="group-empty" class="muted compact">可依車輛、家庭或小隊建立任意群組。</p>
+            </section>
+            <section class="panel tools-panel" aria-labelledby="tools-heading">
+              <div class="panel-heading"><div><p class="eyebrow">TOOLS</p><h2 id="tools-heading">資料工具</h2></div></div>
+              <button id="export-button" class="wide secondary" type="button">匯出完整備份</button>
+              <button id="share-export-button" class="wide secondary" type="button">匯出分享副本</button>
+              <button id="import-button" class="wide secondary" type="button">匯入備份</button>
+              <input id="import-file" type="file" accept="application/json" hidden />
+            </section>
+          </aside>
+        </div>
+      </section>
+    </main>
+
+    <dialog id="trip-dialog">
+      <form id="trip-form" method="dialog" class="dialog-form">
+        <header><p class="eyebrow">NEW TRIP</p><h2>建立旅程</h2></header>
+        <label>旅程名稱<input name="title" maxlength="80" required placeholder="例：春天城市散步" /></label>
+        <label>目的地<input name="destination" maxlength="120" required placeholder="國家、城市或多個地區" /></label>
+        <div class="field-pair"><label>開始日期<input name="startDate" type="date" required /></label><label>結束日期<input name="endDate" type="date" required /></label></div>
+        <div class="field-pair"><label>旅程時區<input name="timeZone" required value="Asia/Taipei" /></label><label>記帳幣別<input name="currency" required maxlength="3" value="TWD" /></label></div>
+        <p class="form-error" role="alert"></p>
+        <footer><button class="secondary" data-close type="button">取消</button><button class="primary" value="default">建立旅程</button></footer>
+      </form>
+    </dialog>
+
+    <dialog id="item-dialog">
+      <form id="item-form" method="dialog" class="dialog-form">
+        <header><p class="eyebrow">ADD TO DAY</p><h2>新增安排</h2></header>
+        <div class="field-pair"><label>類型<select name="type"><option value="place">景點</option><option value="meal">餐飲</option><option value="stay">住宿</option><option value="flight">航班</option><option value="transport">交通</option><option value="other">其他</option></select></label><label>開始時間<input name="startTime" type="time" /></label></div>
+        <label>名稱<input name="title" maxlength="100" required placeholder="要去哪裡或做什麼？" /></label>
+        <label>地址／位置<input name="location" maxlength="200" placeholder="可直接手動輸入" /></label>
+        <label>目的地 Google Maps 連結（選填）<input name="mapsUrl" type="url" maxlength="600" placeholder="https://maps.app.goo.gl/..." /></label>
+        <p class="field-help">未貼連結時，Google Maps 會搜尋地址；沒有地址則搜尋安排名稱。外部導航不需要 API Key。</p>
+        <div id="flight-fields" class="conditional" hidden>
+          <div class="field-pair"><label>出發機場<input name="origin" maxlength="12" /></label><label>抵達機場<input name="destination" maxlength="12" /></label></div>
+          <div class="field-pair"><label>出發時區<input name="departureTimeZone" placeholder="Asia/Taipei" /></label><label>抵達時區<input name="arrivalTimeZone" placeholder="Europe/Paris" /></label></div>
+          <label>抵達日期與時間<input name="arrivalDateTime" type="datetime-local" /></label>
+        </div>
+        <div class="field-pair"><label>費用<input name="amount" min="0" step="0.01" inputmode="decimal" type="number" /></label><label>幣別<input name="currency" maxlength="3" /></label></div>
+        <label>群組<select name="groupId"><option value="">所有人</option></select></label>
+        <label>備註<textarea name="notes" maxlength="1000" rows="3"></textarea></label>
+        <fieldset class="parking-fields">
+          <legend>停車資訊（選填）</legend>
+          <label>主要停車場名稱<input name="parkingPrimaryName" maxlength="120" placeholder="例：車站旁停車場" /></label>
+          <label>主要停車場 Google Maps 連結<input name="parkingPrimaryMapsUrl" type="url" maxlength="600" placeholder="未貼連結時依名稱搜尋" /></label>
+          <label>備用停車場名稱<input name="parkingBackupName" maxlength="120" /></label>
+          <label>備用停車場 Google Maps 連結<input name="parkingBackupMapsUrl" type="url" maxlength="600" /></label>
+          <label>停車備註<textarea name="parkingNotes" maxlength="300" rows="2" placeholder="例：入口在後方、限高資訊"></textarea></label>
+        </fieldset>
+        <p class="form-error" role="alert"></p>
+        <footer><button class="secondary" data-close type="button">取消</button><button class="primary" value="default">加入行程</button></footer>
+      </form>
+    </dialog>
+
+    <dialog id="group-dialog">
+      <form id="group-form" method="dialog" class="dialog-form">
+        <header><p class="eyebrow">NEW GROUP</p><h2>新增同行群組</h2></header>
+        <label>群組名稱<input name="name" maxlength="50" required placeholder="例：一號車、家庭 A" /></label>
+        <p class="form-error" role="alert"></p>
+        <footer><button class="secondary" data-close type="button">取消</button><button class="primary" value="default">新增群組</button></footer>
+      </form>
+    </dialog>
+
+    <dialog id="settings-dialog" class="setup-dialog">
+      <form id="connection-form" class="dialog-form setup-form">
+        <header class="setup-header">
+          <div><p class="eyebrow">SETUP</p><h2>設定你的 Travel OS</h2><p class="muted compact">照著畫面一步一步完成即可，不需要先懂 GitHub、Firebase 或 Google Cloud。</p></div>
+          <button class="icon-button" data-close type="button" aria-label="關閉設定精靈">×</button>
+        </header>
+
+        <section id="shared-host-warning" class="trust-warning" role="note" hidden>
+          <strong>你現在使用的是官方公開體驗站</strong>
+          <p>這個網站只提供本機模式，不接受你的 Firebase config、Google API Key 或密碼。要使用雲端同步，請先建立一份由你自己控制的 Travel OS 網站。</p>
+          <a href="https://github.com/fishingwithbag/Travel-OS/blob/main/docs/SELF_HOSTING.zh-TW.md" target="_blank" rel="noopener noreferrer">查看完整自行部署步驟</a>
+        </section>
+
+        <div id="connection-summary" class="connection-summary"><strong>本機模式</strong><span>資料只保存在這台裝置</span></div>
+
+        <div id="setup-workspace" class="setup-workspace">
+          <nav class="setup-stepper" aria-label="設定步驟">
+            <button type="button" data-setup-jump="0"><span>1</span><strong>網站</strong></button>
+            <button type="button" data-setup-jump="1"><span>2</span><strong>Firebase</strong></button>
+            <button type="button" data-setup-jump="2"><span>3</span><strong>Google Maps</strong></button>
+            <button type="button" data-setup-jump="3"><span>4</span><strong>登入</strong></button>
+            <button type="button" data-setup-jump="4"><span>5</span><strong>驗證</strong></button>
+            <button type="button" data-setup-jump="5"><span>6</span><strong>完成</strong></button>
+          </nav>
+
+          <fieldset id="external-service-fields" class="connection-fields">
+            <section class="setup-panel" data-setup-step="0">
+              <p class="eyebrow">STEP 1 · YOUR WEBSITE</p>
+              <h3>先確認你有自己的 Travel OS 網站</h3>
+              <p>正式雲端模式必須在你自己控制的網站中設定。GitHub Pages 可以免費託管這個網站；Travel OS repository 已經準備好 GitHub Actions，不需要你寫部署程式。</p>
+              <div class="setup-card"><strong>你現在開啟的網站</strong><code id="current-site-url"></code><strong id="official-demo-url-warning" class="demo-url-warning" hidden>⚠ 您目前開啟的是官方 Demo 教學網址，請勿在此設定 Firebase、Google API Key 或登入帳密。請先建立自己的 Travel OS 網站，再進行正式設定。</strong><span>如果這是你自己的 GitHub Pages 或自訂網域，就可以繼續。</span></div>
+              <ol class="setup-steps detailed">
+                <li><strong>登入 GitHub</strong>，開啟 Travel OS repository。</li>
+                <li>點右上方附近的 <strong>Use this template</strong> → <strong>Create a new repository</strong>。</li>
+                <li><strong>Owner</strong> 選你的帳號；Repository name 建議填 <code>Travel-OS</code>；GitHub Free 請選 <strong>Public</strong>。</li>
+                <li>建立後進入你的 repository → <strong>Settings</strong> → 左側 <strong>Pages</strong>。</li>
+                <li>在 <strong>Build and deployment</strong> 的 <strong>Source</strong> 選 <strong>GitHub Actions</strong>。</li>
+                <li>到 <strong>Actions</strong> 頁面等待 Pages workflow 變成綠色成功，再回 <strong>Settings → Pages</strong> 點 <strong>Visit site</strong>。</li>
+              </ol>
+              <div class="setup-links"><a href="https://github.com/fishingwithbag/Travel-OS/generate" target="_blank" rel="noopener noreferrer">建立自己的 Travel OS repository</a><a href="https://docs.github.com/en/pages/getting-started-with-github-pages/creating-a-github-pages-site" target="_blank" rel="noopener noreferrer">GitHub 官方 Pages 說明</a></div>
+              <label class="check-row"><input name="siteReady" type="checkbox" /> 我已經能在自己的網址正常開啟 Travel OS。</label>
+            </section>
+
+            <section class="setup-panel" data-setup-step="1" hidden>
+              <p class="eyebrow">STEP 2 · FIREBASE</p>
+              <h3>建立免費的 Firebase 雲端同步</h3>
+              <p>Firebase 負責 Travel OS 的登入、旅程資料與多人同步。這個 Firebase 專案請維持 <strong>Spark 免費方案</strong>，不要替它連結 Cloud Billing（雲端帳單）；Google Maps 會在下一步使用另一個 Google Cloud 專案。</p>
+              <div class="warning-card"><strong>看到「帳單 / Blaze」時先停下來</strong><span>Firebase 官方說，Spark 專案若連結 Cloud Billing（雲端帳單），或在同一個專案使用 Google Maps API，會升級成 Blaze。這就是為什麼 Travel OS 把 Firebase 與 Google Maps 分成兩個專案。</span></div>
+              <ol class="setup-steps detailed">
+                <li><strong>建立 Firebase 專案：</strong>開啟 Firebase 控制台 → <strong>建立專案</strong>。專案名稱可填 <code>My Travel OS</code>。Google Analytics 可略過，並維持 Spark 免費方案。</li>
+                <li><strong>註冊網頁應用程式：</strong>進入 <strong>專案總覽</strong> → 點 <strong>&lt;/&gt; 網頁</strong>（若已有應用程式，點「新增應用程式」→「網頁」）→「應用程式暱稱」填 <code>Travel OS</code> → <strong>不要勾選 Firebase Hosting</strong> → 按「註冊應用程式」。</li>
+                <li><strong>啟用電子郵件／密碼登入：</strong>左側進入 <strong>Authentication（驗證）</strong> →「開始使用」→「登入方式」→「電子郵件地址/密碼」→ 啟用 →「儲存」。不要啟用「電子郵件連結」。</li>
+                <li><strong>建立你的登入帳號：</strong>Authentication →「使用者」→「新增使用者」→ 輸入你自己的電子郵件與密碼。這組帳密稍後會填回 Travel OS。</li>
+                <li><strong>建立 Realtime Database：</strong>左側進入 <strong>Realtime Database</strong> →「建立資料庫」→ 選擇適合的位置 → 起始安全規則選 <strong>鎖定模式</strong> →「完成」。<strong>不要選測試模式。</strong></li>
+                <li><strong>複製 Realtime Database URL：</strong>留在 <strong>Realtime Database →「資料」</strong>頁籤。頁面上方會顯示一串以 <code>https://</code> 開頭的資料庫網址，旁邊有連結圖示。<strong>請只複製上方這串網址</strong>，不要複製資料區裡顯示的 <code>/: null</code>。</li>
+                <li><strong>部署 Travel OS 規則：</strong>Realtime Database →「<strong>規則</strong>」頁籤 → 將原本內容全部替換成 Travel OS Rules → 按「<strong>發布</strong>」。Firebase Rules 會在伺服器端保護每次讀寫。</li>
+                <li><strong>取得 firebaseConfig：</strong>左側「設定」齒輪 →「<strong>專案設定</strong>」→「<strong>一般</strong>」→ 往下找到「<strong>您的應用程式</strong>」→ Travel OS →「<strong>SDK 設定與配置</strong>」→ 選「<strong>設定</strong>」。</li>
+                <li><strong>複製 firebaseConfig：</strong>從 <code>const firebaseConfig = {</code> 開始，一路複製到最後的 <code>};</code>。<strong>不用自己加入 databaseURL</strong>；Travel OS 會把你上一步另外複製的 Realtime Database URL 自動合併進設定。</li>
+              </ol>
+              <div class="setup-actions-inline"><a href="https://console.firebase.google.com/" target="_blank" rel="noopener noreferrer">開啟 Firebase 控制台</a><button id="copy-rules-button" class="secondary" type="button">複製 Travel OS Rules</button></div>
+              <details><summary>查看 Firebase 官方文件</summary><div class="setup-links"><a href="https://firebase.google.com/docs/web/setup?hl=zh-TW" target="_blank" rel="noopener noreferrer">建立網頁應用程式／firebaseConfig</a><a href="https://firebase.google.com/docs/auth/web/password-auth?hl=zh-TW" target="_blank" rel="noopener noreferrer">電子郵件／密碼驗證</a><a href="https://firebase.google.com/docs/database/web/start?hl=zh-TW" target="_blank" rel="noopener noreferrer">Realtime Database</a><a href="https://firebase.google.com/docs/database/security?hl=zh-TW" target="_blank" rel="noopener noreferrer">Realtime Database 安全規則</a><a href="https://firebase.google.com/docs/projects/billing/firebase-pricing-plans?hl=zh-TW" target="_blank" rel="noopener noreferrer">Spark / Blaze 方案</a></div></details>
+              <label>把剛才複製的完整 firebaseConfig 貼在這裡
+                <textarea name="firebaseConfig" rows="9" spellcheck="false" placeholder='const firebaseConfig = {&#10;  apiKey: "...",&#10;  authDomain: "...",&#10;  projectId: "...",&#10;  appId: "..."&#10;};'></textarea>
+              </label>
+              <p class="field-help">Travel OS 只會讀取公開的 Firebase 網頁設定。服務帳戶（Service Account）、私密金鑰（private key）、Admin SDK 憑證都會被拒絕。firebaseConfig 裡沒有 databaseURL 也沒關係。</p>
+              <label>Realtime Database URL
+                <input name="firebase_databaseURL" type="url" placeholder="https://你的資料庫.firebaseio.com" autocomplete="off" />
+              </label>
+              <p class="field-help">取得位置：Firebase 控制台 → Realtime Database →「資料」頁籤 → 複製頁面上方顯示的 HTTPS 網址。不要複製下方資料樹中的 <code>/: null</code>。</p>
+              <div id="firebase-config-preview" class="setup-check-result" aria-live="polite"><span>貼上後按「下一步」，Travel OS 會先確認 Project ID、Auth Domain 與 Realtime Database URL。</span></div>
+              <details><summary>只有找不到完整 firebaseConfig 時才用逐欄輸入</summary><div class="setup-fields"><label>API 金鑰<input name="firebase_apiKey" autocomplete="off" /></label><label>驗證網域<input name="firebase_authDomain" placeholder="project.firebaseapp.com" /></label><label>專案 ID<input name="firebase_projectId" /></label><label>應用程式 ID<input name="firebase_appId" /></label><label>儲存空間 bucket（選填）<input name="firebase_storageBucket" /></label><label>訊息傳送者 ID（選填）<input name="firebase_messagingSenderId" /></label><label>Measurement ID（選填）<input name="firebase_measurementId" /></label></div></details>
+            </section>
+
+            <section class="setup-panel" data-setup-step="2" hidden>
+              <p class="eyebrow">STEP 3 · GOOGLE MAPS</p>
+              <h3>建立另一個 Google Maps Project 與 Browser Key</h3>
+              <p>這個 project 專門給 Google Maps 使用，和上一頁的 Firebase Spark project 分開。Google Maps 正式使用需要 Billing 與 API Key。</p>
+              <ol class="setup-steps detailed">
+                <li>開啟 <strong>Google Cloud Console</strong>，建立新的 project，例如 <code>My Travel OS Maps</code>。不要選上一頁的 Firebase project。</li>
+                <li>在這個 Maps project 的 <strong>Billing</strong> 連結付款帳戶。Google Maps Platform production 需要 Billing。</li>
+                <li>到 <strong>Google Maps Platform / APIs &amp; Services</strong> 啟用 <strong>Maps JavaScript API</strong>、<strong>Places API</strong>、<strong>Places API (New)</strong>。</li>
+                <li>到 <strong>Google Maps Platform → Keys &amp; Credentials</strong> → <strong>Create credentials → API key</strong>。</li>
+                <li>點進剛建立的 Key。<strong>Application restrictions</strong> 選 <strong>Websites</strong>，加入下方 Travel OS 顯示的 Website referrer。</li>
+                <li><strong>API restrictions</strong> 選 <strong>Restrict key</strong>，只允許 Maps JavaScript API、Places API、Places API (New)。不要保留 unrestricted。</li>
+                <li>到各 API 的 <strong>Quotas</strong> 設合理的 request 上限；到 Billing 建立 <strong>Budget &amp; alerts</strong>。Budget alert 是通知，不是硬性停用，所以 quota 仍然需要。</li>
+              </ol>
+              <div class="security-note"><strong>Website restriction 請填</strong><code id="maps-referrer-recommendation"></code><span>Travel OS 使用 origin 等級的 referrer 驗證。Browser Key 在瀏覽器中可見；安全靠 Website/API restrictions 與 quota，不靠把 Key 隱藏起來。</span></div>
+              <div class="setup-links"><a href="https://console.cloud.google.com/google/maps-apis/credentials" target="_blank" rel="noopener noreferrer">開啟 Google Maps Platform Credentials</a><a href="https://developers.google.com/maps/documentation/javascript/get-api-key" target="_blank" rel="noopener noreferrer">Google 官方 API Key 設定</a><a href="https://developers.google.com/maps/api-security-best-practices" target="_blank" rel="noopener noreferrer">Google 官方 Key 安全指南</a></div>
+              <label>Google Maps Browser Key<input name="googleMapsKey" type="password" autocomplete="off" placeholder="AIza…" /></label>
+              <label class="check-row"><input name="mapsRestrictionsReady" type="checkbox" /> 我已設定 Websites restriction、API restrictions，並確認不是 unrestricted key。</label>
+              <p class="field-help"><strong>不要把 Server Key 貼在這裡。</strong>Routes／Geocoding／Weather 未來只能由你自己的後端使用 Server Key。</p>
+            </section>
+
+            <section class="setup-panel" data-setup-step="3" hidden>
+              <p class="eyebrow">STEP 4 · SIGN IN</p>
+              <h3>輸入你剛才在 Firebase Authentication 建立的帳號</h3>
+              <p>這不是 Google Cloud IAM。Authentication 只負責回答「現在登入 Travel OS 的人是誰」；Travel OS 的 owner／editor／viewer 是另一層旅程權限。</p>
+              <div class="field-pair"><label>Firebase 使用者 Email<input name="email" type="email" autocomplete="username" placeholder="you@example.com" /></label><label>Firebase 使用者密碼<input name="password" type="password" minlength="6" autocomplete="current-password" /></label></div>
+              <p class="field-help">帳號來源：Firebase 控制台 → Authentication（驗證）→「使用者」→「新增使用者」。Travel OS 不會保存你的密碼。</p>
+              <label class="check-row"><input name="remember" type="checkbox" /> 記住這台裝置的公開 Firebase config 與受限制 Browser Key（不保存密碼）</label>
+            </section>
+
+            <section class="setup-panel" data-setup-step="4" hidden>
+              <p class="eyebrow">STEP 5 · VERIFY</p>
+              <h3>最後由 Travel OS 自動檢查</h3>
+              <p>按下驗證後，Travel OS 會依序確認 Google Maps/Places、Firebase Authentication、Realtime Database 與 Rules。測試只在你自己的 Firebase 範圍內執行。</p>
+              <div id="verification-summary" class="setup-check-result"></div>
+              <div id="connection-progress" class="checklist" aria-live="polite"></div>
+              <div class="warning-card"><strong>「登入成功」不代表 Rules 一定安全</strong><span>Travel OS repository 另外用 Firebase Emulator 測試 owner/editor/viewer 與跨旅程拒絕。這裡只確認你的 self-host 設定可以正常連線與合法讀寫。</span></div>
+            </section>
+
+            <section class="setup-panel" data-setup-step="5" hidden>
+              <p class="eyebrow">READY</p>
+              <h3>你的 Travel OS 雲端已連線</h3>
+              <div id="setup-complete-summary" class="setup-check-result success"></div>
+              <p>接下來可以建立第一趟旅程。若之後要讓旅伴登入，先到 Firebase 控制台 → Authentication（驗證）→「使用者」→「新增使用者」建立他們的帳號；旅程內的 owner／editor／viewer 權限由 Travel OS 資料與 Rules 控制，不是 Google Cloud IAM。</p>
+            </section>
+          </fieldset>
+        </div>
+
+        <p class="form-error" role="alert"></p>
+        <footer id="setup-footer" class="settings-actions">
+          <button id="local-mode-button" class="secondary" type="button">先使用本機模式</button>
+          <span class="setup-spacer"></span>
+          <button id="setup-back-button" class="secondary" type="button">上一步</button>
+          <button id="setup-next-button" class="primary" type="button">下一步</button>
+          <button id="setup-verify-button" class="primary" type="submit" hidden>開始驗證</button>
+          <button id="setup-create-trip-button" class="primary" type="button" hidden>建立第一趟旅程</button>
+          <button id="setup-finish-button" class="secondary" type="button" hidden>完成</button>
+        </footer>
+      </form>
+    </dialog>
+
+    <dialog id="import-dialog">
+      <form id="import-form" class="dialog-form">
+        <header><p class="eyebrow">IMPORT PREVIEW</p><h2>確認匯入備份</h2></header>
+        <div id="import-summary" class="connection-summary"></div>
+        <p class="muted">匯入會取代目前本機模式的所有旅程；雲端模式不允許批次覆蓋。</p>
+        <footer><button class="secondary" data-close type="button">取消</button><button class="primary" type="submit">確認取代本機資料</button></footer>
+      </form>
+    </dialog>
+
+    <div id="toast" class="toast" role="status" aria-live="polite" hidden></div>
+  </body>
+</html>
