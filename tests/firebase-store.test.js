@@ -120,6 +120,20 @@ describe('Firebase trip normalization', () => {
     await expect(store.saveTrip(next)).rejects.toThrow(/其他裝置更新/);
   });
 
+  it('lets an uncached transaction retry with server data before checking revision', async () => {
+    const { store, databaseModule } = await connectedStore();
+    const current = createTrip({ title:'Cloud', destination:'Test', startDate:'2027-01-01', endDate:'2027-01-01', timeZone:'UTC', currency:'USD' }, 'trip-a');
+    const next = touchTrip(current);
+    databaseModule.get.mockResolvedValueOnce(snapshot({ 'trip-a':true }));
+    databaseModule.runTransaction.mockImplementationOnce(async (_target, updater) => {
+      expect(updater(null)).toEqual(serializeFirebaseTrip(next));
+      expect(updater(current)).toEqual(serializeFirebaseTrip(next));
+      expect(updater({ ...current, revision:2 })).toBeUndefined();
+      return { committed:true };
+    });
+    await expect(store.saveTrip(next)).resolves.toEqual(next);
+  });
+
   it('writes member/index changes atomically and removes every index on trip deletion', async () => {
     const { store, databaseModule } = await connectedStore();
     await store.setMember('trip-a', 'guest', 'viewer');

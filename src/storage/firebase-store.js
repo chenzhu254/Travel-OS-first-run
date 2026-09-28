@@ -132,6 +132,9 @@ export class FirebaseTripStore {
     } else {
       const expectedRevision = Number(trip.revision) - 1;
       const result = await runTransaction(ref(this.#database, `trips/${trip.id}/data`), (current) => {
+        // Firebase may call this first with null before downloading an existing remote value.
+        // Returning the candidate lets the server send the real value and retry the revision check.
+        if (current == null) return firebaseTrip;
         if (Number(current?.revision) !== expectedRevision) return;
         return commitIfRevisionMatches(current, firebaseTrip);
       }, { applyLocally:false });
