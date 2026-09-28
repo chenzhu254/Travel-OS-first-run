@@ -9,6 +9,7 @@ import { prepareStoreSwitch } from './storage/store-switch.js';
 import { localStorageKey } from './storage/browser-scope.js';
 import { itemMapUrl, parkingMapUrl } from './providers/maps.js';
 import { nextStop } from './domain/next-stop.js';
+import { formatFlightSchedule } from './domain/flight-schedule.js';
 
 let store = new IndexedDbTripStore();
 const state = { trips: [], currentTripId: '', selectedDate: '', mode:'local', connection:null };
@@ -57,6 +58,11 @@ function parkingHtml(item) {
 
 function itemNotesHtml(item) {
   return item.notes ? `<p class="item-notes"><strong>備註</strong><span>${escapeHtml(item.notes)}</span></p>` : '';
+}
+
+function flightScheduleHtml(item) {
+  const schedule = formatFlightSchedule(item);
+  return schedule ? `<p class="item-notes"><strong>起降</strong><span>${escapeHtml(schedule)}</span></p>` : '';
 }
 
 function renderFirebasePreview(config) {
@@ -140,10 +146,10 @@ function render() {
   $('#next-stop').hidden = !upcoming;
   if (upcoming) {
     $('#next-stop-heading').textContent = upcoming.title;
-    $('#next-stop-details').innerHTML = `<p class="next-stop-meta">${escapeHtml(upcoming.startTime || '彈性時間')} · ${escapeHtml(typeLabels[upcoming.type])}</p>${itemNotesHtml(upcoming)}${parkingHtml(upcoming)}${!upcoming.parking && ['place', 'meal', 'stay'].includes(upcoming.type) ? '<p class="parking-unset">停車資訊未設定</p>' : ''}<div class="next-stop-actions">${mapLink(upcoming, 'Google Maps')}</div>`;
+    $('#next-stop-details').innerHTML = `<p class="next-stop-meta">${escapeHtml(upcoming.startTime || '彈性時間')} · ${escapeHtml(typeLabels[upcoming.type])}</p>${flightScheduleHtml(upcoming)}${itemNotesHtml(upcoming)}${parkingHtml(upcoming)}${!upcoming.parking && ['place', 'meal', 'stay'].includes(upcoming.type) ? '<p class="parking-unset">停車資訊未設定</p>' : ''}<div class="next-stop-actions">${mapLink(upcoming, 'Google Maps')}</div>`;
   }
   $('#day-heading').textContent = formatDay(state.selectedDate);
-  $('#timeline').innerHTML = items.map((item) => `<li class="timeline-item"><div class="timeline-time">${escapeHtml(item.startTime || '彈性')}</div><div><h3>${escapeHtml(item.title)}</h3><p class="timeline-meta">${escapeHtml([item.location, item.flight ? `${item.flight.origin || '—'} → ${item.flight.destination || '—'}` : '', item.groupId ? trip.groups.find((group) => group.id === item.groupId)?.name : ''].filter(Boolean).join(' · '))}</p>${itemNotesHtml(item)}${parkingHtml(item)}${mapLink(item)}</div><span class="type-badge">${typeLabels[item.type]}</span></li>`).join('');
+  $('#timeline').innerHTML = items.map((item) => `<li class="timeline-item"><div class="timeline-time">${escapeHtml(item.startTime || '彈性')}</div><div><h3>${escapeHtml(item.title)}</h3><p class="timeline-meta">${escapeHtml([item.location, item.flight ? `${item.flight.origin || '—'} → ${item.flight.destination || '—'}` : '', item.groupId ? trip.groups.find((group) => group.id === item.groupId)?.name : ''].filter(Boolean).join(' · '))}</p>${flightScheduleHtml(item)}${itemNotesHtml(item)}${parkingHtml(item)}${mapLink(item)}</div><span class="type-badge">${typeLabels[item.type]}</span></li>`).join('');
   $('#timeline-empty').hidden = items.length > 0;
   $('#summary-days').textContent = dates.length;
   $('#summary-items').textContent = trip.items.length;
