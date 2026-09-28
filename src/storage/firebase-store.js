@@ -121,10 +121,9 @@ export class FirebaseTripStore {
   async saveTrip(trip) {
     const { ref, get, update, runTransaction } = this.#modules;
     const firebaseTrip = serializeFirebaseTrip(trip);
-    const tripRef = ref(this.#database, `trips/${trip.id}`);
-    const existing = await get(tripRef);
-    if (!existing.exists()) {
-      const index = (await get(ref(this.#database, `userTrips/${this.#uid}`))).val() || {};
+    // A new trip is unreadable until its membership exists; inspect the caller's readable index instead.
+    const index = (await get(ref(this.#database, `userTrips/${this.#uid}`))).val() || {};
+    if (!index[trip.id]) {
       if (Object.keys(index).length >= 100) throw new ValidationError('單一帳號最多支援 100 趟雲端旅程。');
       await update(ref(this.#database), {
         [`trips/${trip.id}`]:{ ownerId:this.#uid, members:{ [this.#uid]:'owner' }, data:firebaseTrip },
