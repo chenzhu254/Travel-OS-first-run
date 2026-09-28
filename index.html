@@ -190,7 +190,7 @@
               <p>Firebase 負責 Travel OS 的登入、旅程資料與多人同步。這個 Firebase 專案請維持 <strong>Spark 免費方案</strong>，不要替它連結 Cloud Billing（雲端帳單）；下一步的 Google Maps 外部導航不需要 API Key。</p>
               <div class="warning-card"><strong>看到「帳單 / Blaze」時先停下來</strong><span>此設定流程不需要啟用付費 Google Maps API。Firebase 專案若連結 Cloud Billing（雲端帳單），會升級成 Blaze；請確認仍使用 Spark。</span></div>
               <ol class="setup-steps detailed">
-                <li><strong>建立 Firebase 專案：</strong>先用自己的 Google 帳戶登入 Firebase 控制台；沒有 Google 帳戶就先依官方說明建立。按 <strong>建立專案</strong>，名稱可填 <code>My Travel OS</code>。Google Analytics 可略過，並維持 Spark 免費方案。這個 Firebase 專案本身也會是 Google Cloud 專案，不必再建一個給目前的 Maps 導航。</li>
+                <li><strong>建立 Firebase 專案：</strong>先用自己的 Google 帳戶登入 Firebase 控制台；沒有 Google 帳戶就先依官方說明建立。按 <strong>建立專案</strong>，名稱可填 <code>My Travel OS</code>。如果 Gemini in Firebase 或 Google Analytics 預設開啟，可在建立流程中關閉；Travel OS 不需要這兩項。維持 Spark 免費方案。這個 Firebase 專案本身也會是 Google Cloud 專案，不必再建一個給目前的 Maps 導航。</li>
                 <li><strong>註冊網頁應用程式：</strong>進入 <strong>專案總覽</strong> → 點 <strong>&lt;/&gt; 網頁</strong>（若已有應用程式，點「新增應用程式」→「網頁」）→「應用程式暱稱」填 <code>Travel OS</code> → <strong>不要勾選 Firebase Hosting</strong> → 按「註冊應用程式」。</li>
                 <li><strong>啟用電子郵件／密碼登入：</strong>左側進入 <strong>Authentication（驗證）</strong> →「開始使用」→「登入方式」→「電子郵件地址/密碼」→ 啟用 →「儲存」。不要啟用「電子郵件連結」。</li>
                 <li><strong>建立你的登入帳號：</strong>Authentication →「使用者」→「新增使用者」→ 輸入你自己的電子郵件與密碼。這組帳密稍後會填回 Travel OS。</li>
