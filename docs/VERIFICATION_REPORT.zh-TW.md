@@ -49,4 +49,4 @@
 
 比對九州自駕原站後，確認初版開源專案遺漏了 Places 地點搜尋，以及由 Firebase Functions 呼叫的 Routes、Geocoding、Weather。新版在精靈 Step 3 加入選填 Browser Key 與獨立的進階 Functions 指引；Step 5 會辨識 Places 載入狀態和 Functions 是否部署。新增安排可透過 Places 選地點，行程卡片可手動請求路程與當日天氣；若未設定 API，仍可手動輸入及使用免 Key Google Maps 連結。
 
-本機執行 `npm run check`：69 個單元測試通過、Functions 語法檢查及 Vite 建置通過。瀏覽器實測 Step 3 顯示、錯誤 Browser Key 阻擋、未填 Key 可進 Step 4，以及無 Functions 時天氣提示。Functions 模組可載入，依賴套件通過 high 等級稽核。**尚未使用真實 Browser Key、Google Billing 或 Blaze 專案測試 Places 選取與 Routes／Geocoding／Weather 的付費 API 呼叫，也未部署 Functions。**先前報告中的 Google Maps「僅外部連結」結論只適用於補回前版本。
+本機執行 `npm run check`：69 個單元測試通過、Functions 語法檢查及 Vite 建置通過；另以 `node --test tests/google-functions.cjs` 驗證三個付費 callable 的登入與輸入拒絕。瀏覽器實測 Step 3 顯示、錯誤 Browser Key 阻擋、未填 Key 可進 Step 4，以及無 Functions 時天氣提示。Functions 模組可載入，依賴套件通過 high 等級稽核。**尚未使用真實 Browser Key、Google Billing 或 Blaze 專案測試 Places 選取與 Routes／Geocoding／Weather 的付費 API 呼叫，也未部署 Functions。**先前報告中的 Google Maps「僅外部連結」結論只適用於補回前版本。
