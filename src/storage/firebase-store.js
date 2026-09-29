@@ -171,6 +171,22 @@ export class FirebaseTripStore {
 
   async replaceAll() { throw new ValidationError('為避免覆蓋雲端資料，請逐趟匯入備份。'); }
 
+  async callGoogle(name, data) {
+    if (!this.#app || !this.#uid) throw new ValidationError('請先登入自己的 Firebase。');
+    if (!['getCapabilities','geocodeAddress','calculateRoute','getWeather'].includes(name)) throw new ValidationError('不支援的 Google 功能。');
+    try {
+      const { getFunctions, httpsCallable } = await import('firebase/functions');
+      const result = await httpsCallable(getFunctions(this.#app, 'us-central1'), name)(data);
+      return result.data;
+    } catch (error) {
+      const code = String(error?.code || '');
+      if (code.includes('not-found')) throw new ValidationError('此 Firebase 專案尚未部署 Travel OS Functions；請依 Google Cloud 設定指南部署。');
+      if (code.includes('resource-exhausted')) throw new ValidationError('Google API 配額或每日使用次數已達上限。');
+      if (code.includes('permission-denied') || code.includes('unauthenticated')) throw new ValidationError('Functions 拒絕存取；請確認已登入自己的 Firebase。');
+      throw new ValidationError(error?.message || 'Google 後端功能無法使用；請檢查 Functions、API 與帳單設定。');
+    }
+  }
+
   async disconnect() {
     if (this.#auth) await this.#modules.signOut(this.#auth).catch(() => {});
     if (this.#app) await this.#modules.deleteApp(this.#app).catch(() => {});

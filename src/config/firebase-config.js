@@ -1,4 +1,5 @@
 import { ValidationError } from '../domain/trip.js';
+import { parseMapsBrowserKey } from '../providers/google-maps.js';
 
 const ALLOWED_FIELDS = ['apiKey', 'authDomain', 'databaseURL', 'projectId', 'storageBucket', 'messagingSenderId', 'appId', 'measurementId'];
 const REQUIRED_FIELDS = ['apiKey', 'authDomain', 'databaseURL', 'projectId', 'appId'];
@@ -67,6 +68,5 @@ export function parseRememberedConnection(raw) {
   try { stored = JSON.parse(String(raw || '')); }
   catch { throw new ValidationError('已記住的 Firebase 連線設定無法解析。'); }
   if (!stored || typeof stored !== 'object' || Array.isArray(stored) || !stored.firebase) throw new ValidationError('已記住的 Firebase 連線設定不完整。');
-  // ponytail: discard obsolete Maps keys; current navigation uses keyless Maps URLs.
-  return Object.freeze({ firebase:parseFirebaseConfig(JSON.stringify(stored.firebase)) });
+  return Object.freeze({ firebase:parseFirebaseConfig(JSON.stringify(stored.firebase)), googleMapsKey:parseMapsBrowserKey(stored.googleMapsKey) });
 }

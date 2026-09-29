@@ -58,6 +58,7 @@
               <h3 id="next-stop-heading"></h3>
               <div id="next-stop-details"></div>
             </section>
+            <div id="day-weather" class="day-weather" role="status"></div>
             <ol id="timeline" class="timeline"></ol>
             <div id="timeline-empty" class="empty-state">
               <span aria-hidden="true">＋</span><h3>這一天還沒有安排</h3><p>加入景點、航班、住宿或交通，開始排出順路的一天。</p>
@@ -108,6 +109,7 @@
         <header><p class="eyebrow">ADD TO DAY</p><h2>新增安排</h2></header>
         <div class="field-pair"><label>類型<select name="type"><option value="place">景點</option><option value="meal">餐飲</option><option value="stay">住宿</option><option value="flight">航班</option><option value="transport">交通</option><option value="other">其他</option></select></label><label>開始時間<input name="startTime" type="time" /></label></div>
         <label>名稱<input name="title" maxlength="100" required placeholder="要去哪裡或做什麼？" /></label>
+        <div id="places-search" class="places-search" hidden><strong>Google 地點搜尋（選填）</strong><div id="places-autocomplete"></div><p id="places-status" class="field-help" role="status">選取地點後會填入名稱、地址與地圖連結。</p></div>
         <label>地址／位置<input name="location" maxlength="200" placeholder="可直接手動輸入" /></label>
         <label>目的地 Google Maps 連結（選填）<input name="mapsUrl" type="url" maxlength="600" placeholder="https://maps.app.goo.gl/..." /></label>
         <p class="field-help">未貼連結時，Google Maps 會搜尋地址；沒有地址則搜尋安排名稱。外部導航不需要 API Key。</p>
@@ -160,7 +162,7 @@
           <nav class="setup-stepper" aria-label="設定步驟">
             <button type="button" data-setup-jump="0"><span>1</span><strong>網站</strong></button>
             <button type="button" data-setup-jump="1"><span>2</span><strong>Firebase</strong></button>
-            <button type="button" data-setup-jump="2"><span>3</span><strong>地圖導航</strong></button>
+            <button type="button" data-setup-jump="2"><span>3</span><strong>Google 地圖</strong></button>
             <button type="button" data-setup-jump="3"><span>4</span><strong>登入</strong></button>
             <button type="button" data-setup-jump="4"><span>5</span><strong>驗證</strong></button>
             <button type="button" data-setup-jump="5"><span>6</span><strong>完成</strong></button>
@@ -187,8 +189,8 @@
             <section class="setup-panel" data-setup-step="1" hidden>
               <p class="eyebrow">STEP 2 · FIREBASE</p>
               <h3>建立免費的 Firebase 雲端同步</h3>
-              <p>Firebase 負責 Travel OS 的登入、旅程資料與多人同步。這個 Firebase 專案請維持 <strong>Spark 免費方案</strong>，不要替它連結 Cloud Billing（雲端帳單）；下一步的 Google Maps 外部導航不需要 API Key。</p>
-              <div class="warning-card"><strong>看到「帳單 / Blaze」時先停下來</strong><span>此設定流程不需要啟用付費 Google Maps API。Firebase 專案若連結 Cloud Billing（雲端帳單），會升級成 Blaze；請確認仍使用 Spark。</span></div>
+              <p>Firebase 負責 Travel OS 的登入、旅程資料與多人同步。只用基本行程及外部導航時，Firebase 可維持 <strong>Spark 免費方案</strong>。Step 3 的 Places 可使用另一個自有 Google Cloud 專案；若要部署 Firebase Functions 計算路程與天氣，才需自願將 Firebase 升級到 Blaze。</p>
+              <div class="warning-card"><strong>看到「帳單 / Blaze」時先確認用途</strong><span>基本 Firebase 設定不需升級。連結 Cloud Billing 會使此 Firebase 專案成為 Blaze；只有你決定啟用需要 Functions 的進階功能時才做。</span></div>
               <ol class="setup-steps detailed">
                 <li><strong>建立 Firebase 專案：</strong>先用自己的 Google 帳戶登入 Firebase 控制台；沒有 Google 帳戶就先依官方說明建立。按 <strong>建立專案</strong>，名稱可填 <code>My Travel OS</code>。如果 Gemini in Firebase 或 Google Analytics 預設開啟，可在建立流程中關閉；Travel OS 不需要這兩項。維持 Spark 免費方案。這個 Firebase 專案本身也會是 Google Cloud 專案，不必再建一個給目前的 Maps 導航。</li>
                 <li><strong>註冊網頁應用程式：</strong>進入 <strong>專案總覽</strong> → 點 <strong>&lt;/&gt; 網頁</strong>（若已有應用程式，點「新增應用程式」→「網頁」）→「應用程式暱稱」填 <code>Travel OS</code> → <strong>不要勾選 Firebase Hosting</strong> → 按「註冊應用程式」。</li>
@@ -215,16 +217,19 @@
             </section>
 
             <section class="setup-panel" data-setup-step="2" hidden>
-              <p class="eyebrow">STEP 3 · MAPS NAVIGATION</p>
-              <h3>Google Maps 導航已可直接使用</h3>
-              <p>Travel OS 目前只會開啟 Google Maps 網站，讓你搜尋景點、餐廳或停車場。這使用 Maps URL，不需要 Google Cloud 專案、Billing 或 API Key。</p>
+              <p class="eyebrow">STEP 3 · GOOGLE MAPS</p>
+              <h3>選擇要啟用的 Google 地圖功能</h3>
+              <p><strong>基本導航：</strong>開啟 Google Maps 查詢景點與停車場，不需 Key，直接下一步即可。<strong>地點自動完成：</strong>填入你自己的 Browser Key，新增安排時便可搜尋 Google 地點。這是選填功能。</p>
               <ol class="setup-steps detailed">
-                <li>建立行程時可填地點名稱、地址，或貼上 Google Maps 分享連結。</li>
-                <li>在「下一個安排」或每日時間軸按 Google Maps，即可開啟目的地或停車場導航。</li>
-                <li>確認後按「下一步」，前往 Firebase 帳號登入。</li>
+                <li>在 <a href="https://console.cloud.google.com/apis/library" target="_blank" rel="noopener noreferrer">Google Cloud API 程式庫</a>，選你自己控制的 Maps 專案（若想讓 Firebase 保持 Spark，請使用另一個 Cloud 專案），啟用 <strong>Maps JavaScript API</strong> 與 <strong>Places API (New)</strong>；確認已設定 Billing 與配額。</li>
+                <li>到「API 和服務 → 憑證」建立 <strong>API 金鑰</strong>。為這把 Browser Key 設定「網站」限制，只允許你自己的網站網域；API 限制只允許 Maps JavaScript API 與 Places API (New)。</li>
+                <li>將 Browser Key 貼在下方；Step 5 驗證時會嘗試載入 Places。若失敗，仍可手動輸入地點與使用免 Key 外部導航。</li>
               </ol>
-              <div class="security-note"><strong>目前不會向你索取 Google API Key</strong><span>若未來加入站內地圖或 Places 搜尋，才需要另一個受 Website/API restrictions 保護的 Browser Key 與獨立 Google Cloud 專案；Server Key 一律不能貼進瀏覽器。</span></div>
-              <div class="setup-links"><a href="https://developers.google.com/maps/documentation/urls/get-started" target="_blank" rel="noopener noreferrer">Google 官方 Maps URL 說明</a></div>
+              <label>Google Maps Browser Key（選填）<input name="googleMapsKey" autocomplete="off" spellcheck="false" placeholder="AIza…" /></label>
+              <p id="maps-key-result" class="setup-check-result" role="status">未設定時維持手動地點輸入及免 Key 導航。</p>
+              <details><summary>進階：路程、地址解析與天氣（需自己的 Firebase Functions）</summary><p>這三項功能使用另一把 <strong>Server Key</strong>，只能設為 Firebase Functions secret，不能貼在此頁、放入 repository 或用 Browser Key 代替。部署 Functions 需要 Firebase Blaze 方案；若不部署，行程仍能使用，計算按鈕會提示缺少後端。完整步驟在你的 repository 的 <code>docs/GOOGLE_CLOUD_SETUP.zh-TW.md</code>。</p><div class="setup-links"><a href="https://firebase.google.com/docs/functions/get-started" target="_blank" rel="noopener noreferrer">Firebase Functions 官方部署文件</a></div></details>
+              <div class="security-note"><strong>Key 的用途必須分開</strong><span>Browser Key 會由你的瀏覽器傳給 Google Maps；Server Key 永遠只留在你自己的 Cloud Functions。不要把任何 Key 貼到官方公開體驗站。</span></div>
+              <div class="setup-links"><a href="https://developers.google.com/maps/documentation/urls/get-started" target="_blank" rel="noopener noreferrer">免 Key Maps URL</a><a href="https://developers.google.com/maps/documentation/javascript/place-autocomplete-new" target="_blank" rel="noopener noreferrer">Places 官方文件</a><a href="https://developers.google.com/maps/api-security-best-practices" target="_blank" rel="noopener noreferrer">金鑰限制官方文件</a></div>
             </section>
 
             <section class="setup-panel" data-setup-step="3" hidden>
@@ -233,13 +238,13 @@
               <p>這不是 Google Cloud IAM。Authentication 只負責回答「現在登入 Travel OS 的人是誰」；Travel OS 的 owner／editor／viewer 是另一層旅程權限。</p>
               <div class="field-pair"><label>Firebase 使用者 Email<input name="email" type="email" autocomplete="username" placeholder="you@example.com" /></label><label>Firebase 使用者密碼<input name="password" type="password" minlength="6" autocomplete="current-password" /></label></div>
               <p class="field-help">帳號來源：Firebase 控制台 → Authentication（驗證）→「使用者」→「新增使用者」。Travel OS 不會保存你的密碼。</p>
-              <label class="check-row"><input name="remember" type="checkbox" /> 記住這台裝置的公開 Firebase config（不保存密碼）</label>
+              <label class="check-row"><input name="remember" type="checkbox" /> 記住這台裝置的 Firebase Web config 與選填 Browser Key（不保存密碼）</label>
             </section>
 
             <section class="setup-panel" data-setup-step="4" hidden>
               <p class="eyebrow">STEP 5 · VERIFY</p>
               <h3>最後由 Travel OS 自動檢查</h3>
-              <p>按下驗證後，Travel OS 會登入你的 Firebase，並在你的 UID 範圍內測試 Realtime Database 寫入、讀取與刪除。Google Maps 外部導航不需要驗證 API Key。</p>
+              <p>按下驗證後，Travel OS 會登入你的 Firebase，並在你的 UID 範圍內測試 Realtime Database 寫入、讀取與刪除。若填了 Browser Key，也會嘗試載入 Places；這不是 Billing、配額或網站限制的完整稽核，請在新增安排時實際搜尋一個地點。</p>
               <div id="verification-summary" class="setup-check-result"></div>
               <div id="connection-progress" class="checklist" aria-live="polite"></div>
               <div class="warning-card"><strong>「登入成功」不代表 Rules 一定安全</strong><span>Travel OS repository 另外用 Firebase Emulator 測試 owner/editor/viewer 與跨旅程拒絕。這裡只確認你的 self-host 設定可以正常連線與合法讀寫。</span></div>

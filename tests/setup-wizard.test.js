@@ -11,7 +11,7 @@ describe('zero-basis setup wizard', () => {
     expect((html.match(/data-setup-step="\d"/g) || [])).toHaveLength(6);
     expect(html).toContain('STEP 1 · YOUR WEBSITE');
     expect(html).toContain('STEP 2 · FIREBASE');
-    expect(html).toContain('STEP 3 · MAPS NAVIGATION');
+    expect(html).toContain('STEP 3 · GOOGLE MAPS');
     expect(html).toContain('STEP 4 · SIGN IN');
     expect(html).toContain('STEP 5 · VERIFY');
   });
@@ -40,11 +40,12 @@ describe('zero-basis setup wizard', () => {
     expect(app).not.toContain('請重新複製最新 firebaseConfig');
   });
 
-  it('does not require a paid Maps key for keyless external navigation or cloud login', () => {
-    expect(html).toContain('Google Maps 外部導航不需要 API Key');
-    expect(html).not.toContain('name="googleMapsKey"');
-    expect(app).not.toContain('verifyMapsBrowserKey');
-    expect(app).not.toContain('validateMapsBrowserKey');
+  it('keeps keyless navigation and offers separate optional Browser Key and server setup', () => {
+    expect(html).toContain('基本導航');
+    expect(html).toContain('name="googleMapsKey"');
+    expect(html).toContain('Places API (New)');
+    expect(html).toContain('Server Key');
+    expect(app).toContain("loadPlaces(mapsKey)");
   });
 
   it('contains a dedicated warning for the official demo URL', () => {

@@ -8,12 +8,15 @@ import { FirebaseTripStore } from './storage/firebase-store.js';
 import { prepareStoreSwitch } from './storage/store-switch.js';
 import { localStorageKey } from './storage/browser-scope.js';
 import { itemMapUrl, parkingMapUrl } from './providers/maps.js';
+import { loadPlaces, mapsPlaceUrl, parseMapsBrowserKey } from './providers/google-maps.js';
 import { nextStop } from './domain/next-stop.js';
 import { formatFlightSchedule } from './domain/flight-schedule.js';
 
 let store = new IndexedDbTripStore();
-const state = { trips: [], currentTripId: '', selectedDate: '', mode:'local', connection:null };
+const state = { trips: [], currentTripId: '', selectedDate: '', mode:'local', connection:null, mapsKey:'' };
 let pendingBackup = null;
+const routeResults = new Map();
+const weatherResults = new Map();
 let setupStep = 0;
 let highestSetupStep = 0;
 const $ = (selector) => document.querySelector(selector);
@@ -65,6 +68,24 @@ function flightScheduleHtml(item) {
   return schedule ? `<p class="item-notes"><strong>起降</strong><span>${escapeHtml(schedule)}</span></p>` : '';
 }
 
+function googleFeatureError(error) {
+  return error instanceof ValidationError ? error.message : 'Google 功能暫時無法使用；仍可手動規劃並開啟外部導航。';
+}
+
+async function coordinatesFor(item, sourceStore) {
+  const address = item.location || item.title;
+  return sourceStore.callGoogle('geocodeAddress', { address });
+}
+
+async function checkBackend() {
+  if (state.mode !== 'cloud') return '需先登入自己的 Firebase；未部署 Functions 仍可手動排行程。';
+  try {
+    const capability = await store.callGoogle('getCapabilities', {});
+    return capability.serverKeyReady ? 'Functions 與 Server Key 已設定；請按計算按鈕實測 API 啟用與配額。' : 'Functions 已部署，但尚未設定 Server Key。';
+  }
+  catch (error) { return googleFeatureError(error); }
+}
+
 function renderFirebasePreview(config) {
   const preview = $('#firebase-config-preview');
   preview.innerHTML = `<strong>✓ Firebase Web config 已辨識</strong><span>Project ID：${escapeHtml(config.projectId)}</span><span>Auth Domain：${escapeHtml(config.authDomain)}</span><span>Realtime Database：${escapeHtml(config.databaseURL)}</span>`;
@@ -75,7 +96,8 @@ function renderVerificationSummary() {
   try {
     const input = formData(form);
     const config = parseFirebaseConfigInput(input);
-    $('#verification-summary').innerHTML = `<strong>準備驗證以下設定</strong><span>Firebase：${escapeHtml(config.projectId)}</span><span>Database：${escapeHtml(config.databaseURL)}</span><span>登入帳號：${escapeHtml(input.email || '')}</span><span>Google Maps 外部導航不需要 API Key</span>`;
+    const mapsKey = parseMapsBrowserKey(input.googleMapsKey);
+    $('#verification-summary').innerHTML = `<strong>準備驗證以下設定</strong><span>Firebase：${escapeHtml(config.projectId)}</span><span>Database：${escapeHtml(config.databaseURL)}</span><span>登入帳號：${escapeHtml(input.email || '')}</span><span>Google Maps：${mapsKey ? 'Places Browser Key 將嘗試載入' : '免 Key 外部導航；Places 未啟用'}</span><span>Routes／Geocoding／Weather：需另行部署自己的 Functions</span>`;
   } catch (error) {
     $('#verification-summary').textContent = error instanceof ValidationError ? error.message : '設定尚未完成。';
   }
@@ -108,6 +130,7 @@ function validateSetupStep(step) {
     const config = parseFirebaseConfigInput(input);
     renderFirebasePreview(config);
   }
+  if (step === 2) parseMapsBrowserKey(input.googleMapsKey);
   if (step === 3) {
     if (!String(input.email || '').trim()) throw new ValidationError('請輸入你在 Firebase Authentication → Users 建立的 Email。');
     if (String(input.password || '').length < 6) throw new ValidationError('請輸入 Firebase 使用者密碼。');
@@ -149,7 +172,18 @@ function render() {
     $('#next-stop-details').innerHTML = `<p class="next-stop-meta">${escapeHtml(upcoming.startTime || '彈性時間')} · ${escapeHtml(typeLabels[upcoming.type])}</p>${flightScheduleHtml(upcoming)}${itemNotesHtml(upcoming)}${parkingHtml(upcoming)}${!upcoming.parking && ['place', 'meal', 'stay'].includes(upcoming.type) ? '<p class="parking-unset">停車資訊未設定</p>' : ''}<div class="next-stop-actions">${mapLink(upcoming, 'Google Maps')}</div>`;
   }
   $('#day-heading').textContent = formatDay(state.selectedDate);
-  $('#timeline').innerHTML = items.map((item) => `<li class="timeline-item"><div class="timeline-time">${escapeHtml(item.startTime || '彈性')}</div><div><h3>${escapeHtml(item.title)}</h3><p class="timeline-meta">${escapeHtml([item.location, item.flight ? `${item.flight.origin || '—'} → ${item.flight.destination || '—'}` : '', item.groupId ? trip.groups.find((group) => group.id === item.groupId)?.name : ''].filter(Boolean).join(' · '))}</p>${flightScheduleHtml(item)}${itemNotesHtml(item)}${parkingHtml(item)}${mapLink(item)}</div><span class="type-badge">${typeLabels[item.type]}</span></li>`).join('');
+  const weatherKey = `${trip.id}:${state.selectedDate}`;
+  const weatherItem = items.find((item) => ['place','meal','stay'].includes(item.type));
+  const weather = weatherResults.get(weatherKey);
+  $('#day-weather').innerHTML = weatherItem ? `<button class="secondary small" type="button" data-weather>查看當日天氣</button><span>${escapeHtml(weather || '需部署自己的 Functions；預報僅涵蓋未來 10 天。')}</span>` : '';
+  $('#timeline').innerHTML = items.map((item, index) => {
+    const next = items[index + 1];
+    const canRoute = next && ['place','meal','stay','transport'].includes(item.type) && ['place','meal','stay','transport'].includes(next.type) && (!item.groupId || !next.groupId || item.groupId === next.groupId);
+    const routeKey = `${trip.id}:${state.selectedDate}:${item.id}:${next?.id}`;
+    const directions = canRoute ? `https://www.google.com/maps/dir/?api=1&origin=${encodeURIComponent(item.location || item.title)}&destination=${encodeURIComponent(next.location || next.title)}&travelmode=driving` : '';
+    const route = canRoute ? `<div class="route-leg"><button class="secondary small" type="button" data-route-index="${index}" data-route-mode="DRIVE">開車</button><button class="secondary small" type="button" data-route-index="${index}" data-route-mode="WALK">步行</button><span>開車：${escapeHtml(routeResults.get(`${routeKey}:DRIVE`) || '未計算')} · 步行：${escapeHtml(routeResults.get(`${routeKey}:WALK`) || '未計算')}</span><a href="${escapeHtml(directions)}" target="_blank" rel="noopener noreferrer">開啟路線 ↗</a></div>` : '';
+    return `<li class="timeline-item"><div class="timeline-time">${escapeHtml(item.startTime || '彈性')}</div><div><h3>${escapeHtml(item.title)}</h3><p class="timeline-meta">${escapeHtml([item.location, item.flight ? `${item.flight.origin || '—'} → ${item.flight.destination || '—'}` : '', item.groupId ? trip.groups.find((group) => group.id === item.groupId)?.name : ''].filter(Boolean).join(' · '))}</p>${flightScheduleHtml(item)}${itemNotesHtml(item)}${parkingHtml(item)}${mapLink(item)}${route}</div><span class="type-badge">${typeLabels[item.type]}</span></li>`;
+  }).join('');
   $('#timeline-empty').hidden = items.length > 0;
   $('#summary-days').textContent = dates.length;
   $('#summary-items').textContent = trip.items.length;
@@ -170,13 +204,55 @@ document.addEventListener('click', (event) => {
   if (opener) {
     if (opener.dataset.open === 'settings-dialog') setSetupStep(state.mode === 'cloud' ? 4 : 0);
     openDialog(opener.dataset.open);
+    if (opener.dataset.open === 'item-dialog') mountPlaces();
   }
   const setupJump = event.target.closest('[data-setup-jump]');
   if (setupJump && !setupJump.disabled) setSetupStep(Number(setupJump.dataset.setupJump));
   const day = event.target.closest('[data-date]');
   if (day) { state.selectedDate = day.dataset.date; render(); }
+  const routeButton = event.target.closest('[data-route-index]');
+  if (routeButton) calculateLeg(Number(routeButton.dataset.routeIndex), routeButton.dataset.routeMode);
+  if (event.target.closest('[data-weather]')) calculateWeather();
   if (event.target.closest('[data-close]')) event.target.closest('dialog')?.close();
 });
+
+async function calculateLeg(index, mode) {
+  if (!['DRIVE','WALK'].includes(mode)) return;
+  const trip = currentTrip();
+  const items = trip.items.filter((item) => item.date === state.selectedDate).sort((a,b) => (a.startTime || '99:99').localeCompare(b.startTime || '99:99'));
+  const first = items[index], next = items[index + 1];
+  if (!first || !next) return;
+  const key = `${trip.id}:${state.selectedDate}:${first.id}:${next.id}:${mode}`;
+  if (state.mode !== 'cloud') { routeResults.set(key, '需先登入自己的 Firebase 並部署 Functions。'); render(); return; }
+  const sourceStore = store;
+  routeResults.set(key, '正在計算…'); render();
+  try {
+    const [origin, destination] = await Promise.all([coordinatesFor(first, sourceStore), coordinatesFor(next, sourceStore)]);
+    if (store !== sourceStore) return;
+    const result = await sourceStore.callGoogle('calculateRoute', { origin, destination, travelMode:mode });
+    if (store !== sourceStore) return;
+    routeResults.set(key, `約 ${result.durationMinutes} 分鐘 · ${result.distanceKm} km`);
+  } catch (error) { if (store !== sourceStore) return; routeResults.set(key, googleFeatureError(error)); }
+  if (currentTrip()?.id === trip.id) render();
+}
+
+async function calculateWeather() {
+  const trip = currentTrip(), date = state.selectedDate;
+  const item = trip.items.find((entry) => entry.date === date && ['place','meal','stay'].includes(entry.type));
+  if (!item) return;
+  const key = `${trip.id}:${date}`;
+  if (state.mode !== 'cloud') { weatherResults.set(key, '需先登入自己的 Firebase 並部署 Functions。'); render(); return; }
+  const sourceStore = store;
+  weatherResults.set(key, '正在查詢…'); render();
+  try {
+    const location = await coordinatesFor(item, sourceStore);
+    if (store !== sourceStore) return;
+    const data = await sourceStore.callGoogle('getWeather', { location, date });
+    if (store !== sourceStore) return;
+    weatherResults.set(key, data.available ? `${data.description} · 最高 ${data.temperature}°C · 降雨機率 ${data.precipitationProbability}%` : '預報尚未涵蓋此日期（僅未來 10 天）。');
+  } catch (error) { if (store !== sourceStore) return; weatherResults.set(key, googleFeatureError(error)); }
+  if (currentTrip()?.id === trip.id) render();
+}
 
 $('#trip-select').addEventListener('change', (event) => { state.currentTripId = event.target.value; state.selectedDate = ''; render(); });
 $('#settings-button').addEventListener('click', () => {
@@ -191,6 +267,39 @@ $('#trip-form').addEventListener('submit', async (event) => {
 });
 
 $('#item-form select[name="type"]').addEventListener('change', (event) => { $('#flight-fields').hidden = event.target.value !== 'flight'; });
+async function mountPlaces() {
+  const host = $('#places-search');
+  const key = state.mapsKey;
+  host.hidden = !key;
+  if (!key) return;
+  const status = $('#places-status');
+  status.textContent = '正在載入 Google Places…';
+  try {
+    const { PlaceAutocompleteElement } = await loadPlaces(key);
+    if (state.mapsKey !== key || !$('#item-dialog').open) return;
+    const autocomplete = new PlaceAutocompleteElement();
+    autocomplete.placeholder = '搜尋任何國家或城市的地點';
+    autocomplete.setAttribute('aria-label', 'Google 地點搜尋');
+    autocomplete.addEventListener('gmp-select', async ({ placePrediction }) => {
+      try {
+        status.textContent = '正在取得地點資料…';
+        const place = placePrediction.toPlace();
+        await place.fetchFields({ fields:['id','displayName','formattedAddress'] });
+        const form = $('#item-form');
+        form.elements.title.value = String(place.displayName || '').slice(0, 100);
+        form.elements.location.value = String(place.formattedAddress || '').slice(0, 200);
+        form.elements.mapsUrl.value = mapsPlaceUrl(place);
+        status.textContent = `已選擇：${place.displayName}。可繼續補充備註與停車資訊。`;
+      } catch { status.textContent = '地點詳細資料無法取得；仍可在下方手動輸入。請檢查 Places API (New)、網站限制與配額。'; }
+    });
+    autocomplete.addEventListener('gmp-error', () => { status.textContent = 'Google 地點搜尋不可用；請檢查 API 啟用、Billing、網站限制或配額，並改用手動輸入。'; });
+    $('#places-autocomplete').replaceChildren(autocomplete);
+    status.textContent = '選取地點後會填入名稱、地址與地圖連結；也可手動輸入。';
+  } catch (error) {
+    status.textContent = error.message;
+    $('#places-autocomplete').replaceChildren();
+  }
+}
 $('#item-form').addEventListener('submit', async (event) => {
   event.preventDefault(); const form = event.currentTarget; setError(form, '');
   try { const trip = currentTrip(); const item = createItem({ ...formData(form), date: state.selectedDate }, trip); await saveTrip({ ...trip, items:[...trip.items,item] }); form.reset(); $('#flight-fields').hidden = true; form.closest('dialog').close(); showToast('安排已加入行程。'); } catch (error) { setError(form, error); }
@@ -218,6 +327,7 @@ function updateConnectionSummary() {
 async function activateStore(nextStore, mode, connection = null) {
   const nextTrips = await prepareStoreSwitch(store, nextStore);
   const warnings = nextStore.consumeWarnings?.() || [];
+  routeResults.clear(); weatherResults.clear(); state.mapsKey = '';
   store = nextStore;
   state.mode = mode; state.connection = connection;
   state.trips = nextTrips;
@@ -240,16 +350,25 @@ $('#connection-form').addEventListener('submit', async (event) => {
     const input = formData(form);
     if (!input.email || !input.password) throw new ValidationError('請輸入 Firebase Email 與密碼。');
     const config = parseFirebaseConfigInput(input);
+    const mapsKey = parseMapsBrowserKey(input.googleMapsKey);
     progress.innerHTML += '<span>2／3　正在登入指定的 Firebase 專案，並測試本人範圍讀寫…</span>';
     const cloudStore = new FirebaseTripStore();
     const connection = await cloudStore.connect(config, { email:input.email, password:input.password });
     progress.innerHTML += '<span>3／3　Firebase 診斷讀寫已完成，正在載入旅程…</span>';
     const warnings = await activateStore(cloudStore, 'cloud', connection);
     localStorage.setItem(STORAGE_KEYS.onboardingMode, 'cloud');
-    if (input.remember) localStorage.setItem(STORAGE_KEYS.connection, JSON.stringify({ firebase:config }));
+    state.mapsKey = mapsKey;
+    let mapsStatus = '免 Key 外部導航';
+    if (mapsKey) {
+      try { await loadPlaces(mapsKey); mapsStatus = 'Places 已載入；請再實際搜尋地點確認配額與限制'; }
+      catch (error) { mapsStatus = `Places 未啟用：${error.message}；手動輸入仍可用`; }
+    }
+    $('#maps-key-result').textContent = mapsStatus;
+    if (input.remember) localStorage.setItem(STORAGE_KEYS.connection, JSON.stringify({ firebase:config, googleMapsKey:mapsKey }));
     else localStorage.removeItem(STORAGE_KEYS.connection);
     form.elements.password.value = '';
-    $('#setup-complete-summary').innerHTML = `<strong>✓ 雲端同步已啟用</strong><span>Firebase：${escapeHtml(connection.projectId)}</span><span>帳號：${escapeHtml(connection.email || '')}</span><span>Google Maps：外部導航可直接使用，無需 API Key</span>`;
+    const backendStatus = await checkBackend();
+    $('#setup-complete-summary').innerHTML = `<strong>✓ 雲端同步已啟用</strong><span>Firebase：${escapeHtml(connection.projectId)}</span><span>帳號：${escapeHtml(connection.email || '')}</span><span>Google Maps：${escapeHtml(mapsStatus)}</span><span>路程與天氣：${escapeHtml(backendStatus)}</span>`;
     setSetupStep(5);
     showToast(warnings.length ? `已連接 ${connection.projectId}；另略過 ${warnings.length} 筆失效或損壞的雲端資料。` : `已連接 ${connection.projectId}；目前顯示這個帳號的雲端旅程。`);
   } catch (error) {
@@ -288,8 +407,12 @@ $('#setup-create-trip-button').addEventListener('click', () => {
 $('#setup-finish-button').addEventListener('click', () => $('#settings-dialog').close());
 
 $('#local-mode-button').addEventListener('click', async () => {
+  let mapsKey;
+  try { mapsKey = parseMapsBrowserKey($('#connection-form').elements.googleMapsKey.value); }
+  catch (error) { setError($('#connection-form'), error); return; }
   const localStore = await new IndexedDbTripStore().connect();
   await activateStore(localStore, 'local');
+  state.mapsKey = mapsKey;
   localStorage.setItem(STORAGE_KEYS.onboardingMode, 'local');
   $('#connection-form').closest('dialog').close();
   showToast('已進入本機模式；之後仍可從設定啟用雲端同步。');
@@ -351,6 +474,8 @@ async function start() {
     try {
       const connection = parseRememberedConnection(remembered);
       $('#connection-form').elements.firebaseConfig.value = JSON.stringify(connection.firebase, null, 2);
+      $('#connection-form').elements.googleMapsKey.value = connection.googleMapsKey;
+      state.mapsKey = connection.googleMapsKey;
       $('#connection-form').elements.remember.checked = true;
       localStorage.setItem(STORAGE_KEYS.connection, JSON.stringify(connection));
       highestSetupStep = 3;

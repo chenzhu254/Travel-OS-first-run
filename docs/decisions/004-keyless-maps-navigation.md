@@ -2,7 +2,7 @@
 
 ## Status
 
-Accepted
+Superseded by ADR-005. Keyless external navigation remains the default.
 
 ## Date
 

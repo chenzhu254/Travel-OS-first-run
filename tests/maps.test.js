@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { itemMapUrl, mapSearchUrl, parkingMapUrl } from '../src/providers/maps.js';
+import { mapsPlaceUrl, parseMapsBrowserKey } from '../src/providers/google-maps.js';
 
 describe('Google Maps external navigation', () => {
   it('uses an exact destination link and keeps parking navigation separate', () => {
@@ -13,5 +14,14 @@ describe('Google Maps external navigation', () => {
   });
   it('rejects an empty navigation query', () => {
     expect(() => mapSearchUrl('   ')).toThrow(/地點/);
+  });
+  it('accepts only a Browser Key shape and builds a Google Place URL', () => {
+    const key = `AIza${'b'.repeat(35)}`;
+    expect(parseMapsBrowserKey(` ${key} `)).toBe(key);
+    expect(parseMapsBrowserKey('')).toBe('');
+    expect(() => parseMapsBrowserKey('secret-server-key')).toThrow(/Browser Key/);
+    const url = mapsPlaceUrl({ id:'place-id', displayName:'Sample park', formattedAddress:'Sample City' });
+    expect(url).toContain('query_place_id=place-id');
+    expect(url).toContain('query=Sample+City');
   });
 });

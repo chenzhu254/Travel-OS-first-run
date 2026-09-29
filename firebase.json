@@ -3,5 +3,6 @@
     "rules": "firebase/database.rules.json",
     "predeploy": ["node scripts/firebase-deploy-boundary.mjs guard"]
   },
+  "functions": { "source": "functions", "predeploy": ["node scripts/firebase-deploy-boundary.mjs guard"] },
   "emulators": { "database": { "port": 9000 }, "ui": { "enabled": false } }
 }
