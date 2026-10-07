@@ -29,6 +29,7 @@
         <div class="welcome-actions">
           <button id="cloud-setup-button" class="primary" data-open="settings-dialog" type="button">設定雲端同步</button>
           <button id="local-start-button" class="secondary" data-open="trip-dialog" type="button">先用本機模式</button>
+          <button class="secondary" data-import type="button">匯入備份</button>
         </div>
       </section>
 
@@ -84,7 +85,7 @@
               <div class="panel-heading"><div><p class="eyebrow">TOOLS</p><h2 id="tools-heading">資料工具</h2></div></div>
               <button id="export-button" class="wide secondary" type="button">匯出完整備份</button>
               <button id="share-export-button" class="wide secondary" type="button">匯出分享副本</button>
-              <button id="import-button" class="wide secondary" type="button">匯入備份</button>
+              <button id="import-button" class="wide secondary" data-import type="button">匯入備份</button>
               <input id="import-file" type="file" accept="application/json" hidden />
             </section>
           </aside>

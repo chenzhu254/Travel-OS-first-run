@@ -19,7 +19,7 @@ function text(value, label, max = 300) {
   return value.trim();
 }
 function point(value) {
-  const latitude = Number(value?.latitude), longitude = Number(value?.longitude);
+  const latitude = value?.latitude, longitude = value?.longitude;
   if (!Number.isFinite(latitude) || Math.abs(latitude) > 90 || !Number.isFinite(longitude) || Math.abs(longitude) > 180) throw new HttpsError('invalid-argument', '座標格式不正確。');
   return { latitude, longitude };
 }
@@ -55,7 +55,8 @@ exports.geocodeAddress = onCall(paid, async (request) => {
   url.searchParams.set('address', address);
   url.searchParams.set('key', serverKey.value());
   const data = await google(url);
-  if (data.status === 'ZERO_RESULTS') throw new HttpsError('not-found', '找不到此地址。');
+  if (data.status === 'ZERO_RESULTS') throw new HttpsError('not-found', '找不到此地址。', { reason:'NO_RESULTS' });
+  if (data.status === 'OVER_QUERY_LIMIT' || data.status === 'OVER_DAILY_LIMIT') throw new HttpsError('resource-exhausted', 'Geocoding API 配額或每日用量已達上限；請檢查帳單、Key 與配額。');
   if (data.status !== 'OK') throw new HttpsError('failed-precondition', 'Geocoding API 無法處理此地址；請檢查設定與配額。');
   const found = data.results?.[0];
   return { ...point({ latitude:found?.geometry?.location?.lat, longitude:found?.geometry?.location?.lng }), googleAddress:String(found.formatted_address || address).slice(0, 300), googlePlaceId:String(found.place_id || '').slice(0, 200) };
@@ -71,22 +72,24 @@ exports.calculateRoute = onCall(paid, async (request) => {
     headers:{ 'Content-Type':'application/json', 'X-Goog-Api-Key':serverKey.value(), 'X-Goog-FieldMask':'routes.duration,routes.distanceMeters' },
     body:JSON.stringify({ origin:{ location:{ latLng:origin } }, destination:{ location:{ latLng:destination } }, travelMode, languageCode:'zh-TW', units:'METRIC' }),
   })).routes?.[0];
-  const seconds = Number(String(route?.duration || '').replace(/s$/, ''));
-  const meters = Number(route?.distanceMeters);
-  if (!route || !Number.isFinite(seconds) || !Number.isFinite(meters)) throw new HttpsError('not-found', '找不到有效路線。');
+  const seconds = /^\d+(?:\.\d{1,9})?s$/.test(route?.duration || '') ? Number(route.duration.slice(0, -1)) : NaN;
+  const meters = route?.distanceMeters;
+  if (!route || !Number.isFinite(seconds) || !Number.isFinite(meters) || meters < 0) throw new HttpsError('not-found', '找不到有效路線。', { reason:'NO_RESULTS' });
   return { durationMinutes:Math.max(1, Math.ceil(seconds / 60)), distanceKm:Number((meters / 1000).toFixed(1)) };
 });
 
 exports.getWeather = onCall(paid, async (request) => {
   const uid = auth(request), location = point(request.data?.location), date = text(request.data?.date, '日期', 10);
-  if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) throw new HttpsError('invalid-argument', '日期格式不正確。');
+  const parsedDate = new Date(`${date}T00:00:00Z`);
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(date) || !Number.isFinite(parsedDate.getTime()) || parsedDate.toISOString().slice(0, 10) !== date) throw new HttpsError('invalid-argument', '請使用有效的 YYYY-MM-DD 日期。');
   await limit(uid, 'weather', 30);
   const url = new URL('https://weather.googleapis.com/v1/forecast/days:lookup');
   for (const [name, value] of Object.entries({ key:serverKey.value(), 'location.latitude':location.latitude, 'location.longitude':location.longitude, days:10, pageSize:10, languageCode:'zh-TW', unitsSystem:'METRIC' })) url.searchParams.set(name, String(value));
   const data = await google(url);
   const forecast = data.forecastDays?.find(({ displayDate:v }) => v && `${v.year}-${String(v.month).padStart(2, '0')}-${String(v.day).padStart(2, '0')}` === date);
   if (!forecast) return { available:false, reason:'OUT_OF_RANGE' };
-  const temperature = Number(forecast.maxTemperature?.degrees);
+  const temperature = forecast.maxTemperature?.degrees;
   if (!Number.isFinite(temperature)) throw new HttpsError('data-loss', '天氣資料不完整。');
-  return { available:true, date, temperature, description:String(forecast.daytimeForecast?.weatherCondition?.description?.text || '天氣預報').slice(0, 120), precipitationProbability:Number(forecast.daytimeForecast?.precipitation?.probability?.percent || 0) };
+  const probability = forecast.daytimeForecast?.precipitation?.probability?.percent;
+  return { available:true, date, temperature, description:String(forecast.daytimeForecast?.weatherCondition?.description?.text || '天氣預報').slice(0, 120), precipitationProbability:Number.isFinite(probability) && probability >= 0 && probability <= 100 ? probability : null };
 });

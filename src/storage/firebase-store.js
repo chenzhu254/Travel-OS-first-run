@@ -180,7 +180,7 @@ export class FirebaseTripStore {
       return result.data;
     } catch (error) {
       const code = String(error?.code || '');
-      if (code.includes('not-found')) throw new ValidationError('此 Firebase 專案尚未部署 Travel OS Functions；請依 Google Cloud 設定指南部署。');
+      if (code.includes('not-found') && error?.details?.reason !== 'NO_RESULTS') throw new ValidationError('此 Firebase 專案尚未部署 Travel OS Functions；請依 Google Cloud 設定指南部署。');
       if (code.includes('resource-exhausted')) throw new ValidationError('Google API 配額或每日使用次數已達上限。');
       if (code.includes('permission-denied') || code.includes('unauthenticated')) throw new ValidationError('Functions 拒絕存取；請確認已登入自己的 Firebase。');
       throw new ValidationError(error?.message || 'Google 後端功能無法使用；請檢查 Functions、API 與帳單設定。');

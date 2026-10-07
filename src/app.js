@@ -213,6 +213,7 @@ document.addEventListener('click', (event) => {
   const routeButton = event.target.closest('[data-route-index]');
   if (routeButton) calculateLeg(Number(routeButton.dataset.routeIndex), routeButton.dataset.routeMode);
   if (event.target.closest('[data-weather]')) calculateWeather();
+  if (event.target.closest('[data-import]')) $('#import-file').click();
   if (event.target.closest('[data-close]')) event.target.closest('dialog')?.close();
 });
 
@@ -249,7 +250,7 @@ async function calculateWeather() {
     if (store !== sourceStore) return;
     const data = await sourceStore.callGoogle('getWeather', { location, date });
     if (store !== sourceStore) return;
-    weatherResults.set(key, data.available ? `${data.description} · 最高 ${data.temperature}°C · 降雨機率 ${data.precipitationProbability}%` : '預報尚未涵蓋此日期（僅未來 10 天）。');
+    weatherResults.set(key, data.available ? `${data.description} · 最高 ${data.temperature}°C · ${data.precipitationProbability == null ? '降雨機率未提供' : `降雨機率 ${data.precipitationProbability}%`}` : '預報尚未涵蓋此日期（僅未來 10 天）。');
   } catch (error) { if (store !== sourceStore) return; weatherResults.set(key, googleFeatureError(error)); }
   if (currentTrip()?.id === trip.id) render();
 }
@@ -427,7 +428,6 @@ function downloadBackup(mode) {
 }
 $('#export-button').addEventListener('click', () => downloadBackup('private'));
 $('#share-export-button').addEventListener('click', () => downloadBackup('share'));
-$('#import-button').addEventListener('click', () => $('#import-file').click());
 $('#import-file').addEventListener('change', async (event) => {
   const file = event.target.files?.[0]; if (!file) return;
   if (file.size > 5_000_000) { showToast('備份檔案不可超過 5 MB。'); return; }
