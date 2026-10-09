@@ -40,12 +40,13 @@ describe('zero-basis setup wizard', () => {
     expect(app).not.toContain('請重新複製最新 firebaseConfig');
   });
 
-  it('keeps keyless navigation and offers separate optional Browser Key and server setup', () => {
+  it('uses keyless navigation without paid API setup or backend calls', () => {
     expect(html).toContain('基本導航');
-    expect(html).toContain('name="googleMapsKey"');
-    expect(html).toContain('Places API (New)');
-    expect(html).toContain('Server Key');
-    expect(app).toContain("loadPlaces(mapsKey)");
+    expect(html).toContain('保持 Spark，不連結計費帳戶');
+    expect(html).not.toContain('name="googleMapsKey"');
+    expect(html).not.toContain('day-weather');
+    expect(app).not.toMatch(/weatherSearchUrl|calculateWeather|getWeather/);
+    expect(app).not.toMatch(/loadPlaces|callGoogle|maps.googleapis.com|firebase\/functions/);
   });
 
   it('contains a dedicated warning for the official demo URL', () => {

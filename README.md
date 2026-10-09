@@ -23,7 +23,7 @@
   ·
   <a href="docs/FIREBASE_SETUP.zh-TW.md"><strong>連接 Firebase</strong></a>
   ·
-  <a href="docs/GOOGLE_CLOUD_SETUP.zh-TW.md"><strong>Google Maps 與 Places 設定</strong></a>
+  <a href="docs/GOOGLE_CLOUD_SETUP.zh-TW.md"><strong>免費 Google Maps 導航</strong></a>
 </p>
 
 > [!IMPORTANT]
@@ -33,7 +33,7 @@
 
 一趟旅行散落在很多地方：日期留在日曆、航班躺在信箱、住宿埋在聊天紀錄，費用則分散在不同幣別。整理它們不該再需要另一個會綁住資料的平台。
 
-Travel OS 把每天的安排、航班、住宿、同行群組與費用放回同一張旅程工作台。自行部署後，第一次啟動會先引導你連接自己的 Firebase，讓跨裝置與多人同步成為正式使用的主要模式；Google Maps 外部導航無需 API Key，選填自己的 Browser Key 可加入 Google 地點搜尋；自行部署 Functions 後還能計算路程、解析地址及查詢天氣。IndexedDB 保留給公開 Demo、離線與暫時不連雲端的情境。你決定資料放在哪裡，也可以隨時完整匯出帶走。
+Travel OS 把每天的安排、航班、住宿、同行群組與費用放回同一張旅程工作台。自行部署後，第一次啟動會先引導你連接自己的 Firebase，讓跨裝置與多人同步成為正式使用的主要模式；Google Maps 外部景點、停車場與開車／步行路線無需 API Key。全流程使用 Firebase Spark，不需要 Billing、Blaze 或 Functions；天氣功能已移除。IndexedDB 保留給公開 Demo、離線與暫時不連雲端的情境。你決定資料放在哪裡，也可以隨時完整匯出帶走。
 
 ## 旅程需要的，都在同一個地方
 
@@ -55,7 +55,7 @@ Travel OS 把每天的安排、航班、住宿、同行群組與費用放回同�
 2. Owner 選自己的 GitHub 帳號；Repository name 建議填 `Travel-OS`。GitHub Free 請使用 **Public** repository。
 3. 建立後進入自己的 repository → **Settings → Pages → Build and deployment → Source → GitHub Actions**。
 4. 到 **Actions** 等待 Pages workflow 成功，再回 **Settings → Pages → Visit site** 開啟自己的網站。網址通常是 `https://你的帳號.github.io/Travel-OS/`。
-5. 第一次開啟自己的 Travel OS，網站會自動進入分步設定精靈，依序完成 **網站確認 → Firebase → Google 地圖功能選擇 → Firebase 登入 → 自動驗證**。Google Places 是選填；路程與天氣需額外部署自己的 Functions。
+5. 第一次開啟自己的 Travel OS，網站會自動進入分步設定精靈，依序完成 **網站確認 → Firebase → 免 Key 地圖導航 → Firebase 登入 → 自動驗證**。直接略過 Google Cloud 設定，不接收 Maps API key。
 6. 驗證完成後進入雲端模式，旅程以自己的 Firebase 為同步核心，可跨裝置並支援多人權限。
 
 完整步驟請見[自行部署指南](docs/SELF_HOSTING.zh-TW.md)、[Firebase 設定指南](docs/FIREBASE_SETUP.zh-TW.md)與 [Google Maps 導航說明](docs/GOOGLE_CLOUD_SETUP.zh-TW.md)。設定精靈本身也會逐步告訴你要開哪個官方頁面、按哪裡、填什麼，以及哪些選項不要選。
@@ -74,20 +74,22 @@ flowchart LR
     A[旅行者的瀏覽器] -->|本機模式| B[(IndexedDB)]
     A -->|自行部署版本| C[自己的 Travel OS 網站]
     C -->|登入與同步| D[(自己的 Firebase)]
-    A -->|免 Key 外部導航／選填 Places| E[Google Maps]
-    A -->|選填路程與天氣| G[自己的 Firebase Functions]
-    G -->|Server Key| E
+    A -->|點擊免 Key 外部導航／路線| E[Google Maps]
     F[官方公開體驗站] -->|僅限本機模式| B
 ```
 
 - 官方體驗站不開放雲端設定，避免使用者把憑證交給他人控制的前端。
 - 自行部署版本把使用者自己的 Firebase 雲端同步當作 onboarding 主流程；本機模式是明確可選的 fallback。
-- 「記住這台裝置」只保存 Firebase Web config 與選填的 Google Browser Key，不保存密碼或登入狀態。
+- 「記住這台裝置」只保存 Firebase Web config，不保存密碼或登入狀態。
 - Travel OS 拒絕 service account、Admin SDK 私鑰及 server secret。
 - Firebase Rules 以 UID、`tripId` 和 membership 隔離資料。
-- Google Maps 外部連結不需 Key；目前沒有站內 Places 搜尋或 Maps JavaScript API。Routes／Geocoding／Weather Server Key 必須留在使用者自己的後端。
+- Google Maps 外部連結不需 Key；不載入付費 Google APIs，也不提供天氣查詢。舊版記住的 Maps key 會在讀取設定時移除。
 
 更多細節請讀[資料與備份](docs/DATA_AND_BACKUPS.zh-TW.md)、[安全政策](SECURITY.md)及[共享體驗站架構決策](docs/decisions/003-shared-demo-local-only.md)。
+
+## 免費使用範圍
+
+Firebase Spark 不需要付款資料；有儲存、連線與流量等免費額度限制，並非無限容量。遇到額度限制可備份並切換本機模式，不需升級付費。請在控制台確認專案維持 Spark，網站無法查證或變更計費方案。詳見 [Firebase 官方方案說明](https://firebase.google.com/docs/projects/billing/firebase-pricing-plans)。
 
 ## 本機開發
 

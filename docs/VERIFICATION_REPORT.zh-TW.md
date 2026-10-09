@@ -1,3 +1,5 @@
+> 最新產品基準：2026-10-09 起依 ADR-006 僅支援 Spark 免費設定、免 Key 地圖與路線；移除全部天氣及付費 Google API。以下較早驗證紀錄屬歷史行為，不是現行功能或通過證據。
+
 # Travel OS 首次設定與行程功能驗證報告
 
 首次驗證日期：2026-09-29；最新追加驗證：2026-10-08（Asia/Taipei）。下方初次結果保留為歷史紀錄，最新結果以追加紀錄為準。
@@ -83,3 +85,14 @@
 手機視窗驗證截圖（合成資料）：
 
 ![390×844 視窗下的下一站、備註、停車與不同幣別摘要](assets/verification-mobile-2026-10-08.png)
+
+## 2026-10-09 — Spark 免費流程與天氣移除
+
+- 不接收 Maps Browser Key，不載入 Places，不呼叫／部署 Functions；舊版記住的 Maps key 在設定解析時移除，Firebase 設定沿用。
+- 完整移除天氣 API、按鈕、快取、外部天氣查詢與樣式。
+- 相鄰安排提供免 Key 開車／步行 Maps URL，保留目的地、主要／備用停車場與備註。
+- `npm run check`：69 項測試及 production build 通過；`npm audit --audit-level=high`：0 vulnerabilities。
+- 實際本機瀏覽器：三日跨年示例資料重整讀取正常，下一安排備註／停車與 TWD、USD 分幣別保留；無天氣區塊，無 Maps API script，含兩種正確路線連結，HTML 備註安全呈現。
+- 精靈 Steps 1–3 使用合成 config 檢查格式及免 Key 導航說明，未連線任何合成或作者雲端。Step 4/5 真實登入與資料讀寫尚待部署後重驗；本次未改 Auth、RTDB 儲存或 Rules。
+- 截圖：`assets/verification-spark-2026-10-09.png`、`assets/verification-spark-wizard-2026-10-09.png`，僅合成資料。
+- Firebase 計費方案只能由擁有者在控制台確認；此軟體不變更計費或既有資源，不保證 Spark 無限額度。PR 尚未合併時公開網站仍為舊版。

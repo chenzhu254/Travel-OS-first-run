@@ -1,10 +1,10 @@
 # Firebase 設定指南
 
-這份文件假設你第一次使用 Firebase。請照順序操作，不要跳步。基本 Travel OS 使用 Firebase Authentication、Realtime Database 與多人同步；Google Maps 外部導航不需要 API Key。選填 Places 與自有 Functions 的設定另見 [Google Cloud 指南](GOOGLE_CLOUD_SETUP.zh-TW.md)。
+這份文件假設你第一次使用 Firebase。請照順序操作，不要跳步。基本 Travel OS 使用 Firebase Authentication、Realtime Database 與多人同步；Google Maps 外部導航不需要 API Key。免 Key 地圖使用方式另見 [Google Cloud 指南](GOOGLE_CLOUD_SETUP.zh-TW.md)。
 
-> 重要：完成基本雲端旅程時，Firebase project 可維持 **Spark 免費方案**。若你自願部署路程與天氣 Functions，需將此專案升級 Blaze；僅用 Places 時可選擇另一個自有 Google Cloud 專案來避免更動 Firebase 方案。
+> 重要：完成基本雲端旅程時，Firebase project 可維持 **Spark 免費方案**。不連結計費帳戶、不使用 Google 付費 API，也不部署 Functions；天氣功能已移除。Spark 有免費額度限制，不代表無限使用。
 
-開始前，請先完成[GitHub Pages 自行部署](SELF_HOSTING.zh-TW.md)，並確認你已經能開啟自己的 Travel OS 網址。若還沒有 Google 帳戶，先依[Google 官方說明](https://support.google.com/accounts/answer/27441?hl=zh-hant)建立；Firebase 控制台使用 Google 帳戶登入。建立 Firebase project 時，Google Cloud project 也會一併建立；免 Key Maps 外部導航無需額外設定，Places 與後端 Google APIs 則是選填。[Firebase 官方專案說明](https://firebase.google.com/docs/projects/learn-more)
+開始前，請先完成[GitHub Pages 自行部署](SELF_HOSTING.zh-TW.md)，並確認你已經能開啟自己的 Travel OS 網址。若還沒有 Google 帳戶，先依[Google 官方說明](https://support.google.com/accounts/answer/27441?hl=zh-hant)建立；Firebase 控制台使用 Google 帳戶登入。建立 Firebase project 時，Google Cloud project 也會一併建立；免 Key Maps 外部導航無需額外設定，不需要建立任何 Google Maps API 金鑰。[Firebase 官方專案說明](https://firebase.google.com/docs/projects/learn-more)
 
 ## 1. 建立 Firebase 專案
 
@@ -13,7 +13,7 @@
 3. 專案名稱可填 `My Travel OS`。
 4. 若看到 **Gemini in Firebase** 或 **Google Analytics** 的開關，兩者都不是 Travel OS 必要功能；目前介面可能預設開啟，可自行關閉後繼續。
 5. 建立完成後會進入 **專案總覽**。
-6. 基本設定先保持 **Spark** 免費方案；若流程要求連結 Billing／升級 Blaze，先停下來確認是否正在進行自願啟用的進階功能。
+6. 基本設定先保持 **Spark** 免費方案；若流程要求連結 Billing／升級 Blaze，不要繼續；Travel OS 全流程不需要開通計費。
 
 官方說明：[Firebase pricing plans](https://firebase.google.com/docs/projects/billing/firebase-pricing-plans)
 
@@ -189,6 +189,6 @@ const firebaseConfig = {
 - **Email 或密碼不正確**：確認帳號存在於目前 Firebase 專案的 Authentication →「使用者」。
 - **電子郵件地址/密碼尚未啟用**：Authentication →「登入方式」→「電子郵件地址/密碼」→ 啟用 → 儲存。
 - **PERMISSION_DENIED / Rules 拒絕存取**：確認 Realtime Database →「規則」已發布 Travel OS Rules，而不是鎖定模式原始規則或測試模式。
-- **看到 Blaze / Billing**：基本設定不需要 Billing；若未打算部署 Functions，請確認 Firebase project 仍維持 Spark。
+- **看到 Blaze / Billing**：Travel OS 不需要 Billing；請確認 Firebase project 維持 Spark。若已有計費帳戶連結，請先由擁有者檢查方案與既有資源。
 
-完成這一頁後，可閱讀 [Google Maps 與 Google Cloud 設定](GOOGLE_CLOUD_SETUP.zh-TW.md)；免 Key 外部導航不需另外設定 Google Cloud，Places 與路程／天氣則依需求啟用。
+完成這一頁後，可閱讀 [Google Maps 與 Google Cloud 設定](GOOGLE_CLOUD_SETUP.zh-TW.md)；免 Key 外部導航不需另外設定 Google Cloud，不提供付費 Places、API 自動路程或天氣功能。

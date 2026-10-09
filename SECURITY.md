@@ -13,7 +13,7 @@
 ## 安全邊界
 
 - Firebase Web config 會在瀏覽器可見；它不能取代 Authentication、Database Rules 或配額限制。
-- 目前 Google Maps 外部導航使用免 Key 的 Maps URL，不接收或驗證 Browser Key。Routes／Geocoding／Weather Server Key 不得進入前端。
+- 目前 Google Maps 外部導航使用免 Key 的 Maps URL，不接收或驗證 Browser Key。不提供付費 API 或 Functions 部署流程；舊版保存的 Maps Key 在載入設定時移除。
 - Travel OS 不需要且不接受 service account、Admin SDK 私鑰、OAuth client secret 或 server key。
 - 官方公開體驗站只開放本機模式，不接受 Firebase config、Google API key 或帳號密碼；雲端模式只供自行部署版本使用。
 - 每位自行部署者必須維護自己的 Firebase Rules 與 Authentication。若將來自行加入付費 Google API，需另外管理 Key 限制、配額與帳務。

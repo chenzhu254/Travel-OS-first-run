@@ -3,7 +3,6 @@ import { vi } from 'vitest';
 import { createItem, createTrip, touchTrip } from '../src/domain/trip.js';
 import { commitIfRevisionMatches, FirebaseTripStore, normalizeFirebaseTrip, parseFirebaseTrip, serializeFirebaseTrip } from '../src/storage/firebase-store.js';
 
-vi.mock('firebase/functions', () => ({ getFunctions:vi.fn(() => ({})), httpsCallable:vi.fn() }));
 
 function snapshot(value) {
   return {
@@ -42,19 +41,6 @@ async function connectedStore() {
 }
 
 describe('Firebase trip normalization', () => {
-  it('keeps a no-result error separate from missing Functions deployment', async () => {
-    const { store } = await connectedStore();
-    const { httpsCallable } = await import('firebase/functions');
-    httpsCallable.mockReturnValue(async () => { throw { code:'functions/not-found', message:'找不到此地址。', details:{ reason:'NO_RESULTS' } }; });
-    await expect(store.callGoogle('geocodeAddress', { address:'Example address' })).rejects.toThrow('找不到此地址。');
-    httpsCallable.mockReturnValue(async () => { throw { code:'functions/not-found', message:'找不到有效路線。', details:{ reason:'NO_RESULTS' } }; });
-    await expect(store.callGoogle('calculateRoute', {})).rejects.toThrow('找不到有效路線。');
-    httpsCallable.mockReturnValue(async () => { throw { code:'functions/not-found', message:'NOT_FOUND' }; });
-    await expect(store.callGoogle('getCapabilities', {})).rejects.toThrow(/尚未部署/);
-    httpsCallable.mockReturnValue(async () => { throw { code:'functions/resource-exhausted' }; });
-    await expect(store.callGoogle('getWeather', {})).rejects.toThrow(/配額/);
-    await store.close();
-  });
   it('rejects an unreadable diagnostic and removes its temporary record', async () => {
     const appModule = { initializeApp:vi.fn(() => ({})), deleteApp:vi.fn(async () => {}) };
     const authModule = { getAuth:vi.fn(() => ({})), inMemoryPersistence:{ type:'NONE' }, setPersistence:vi.fn(async () => {}), signInWithEmailAndPassword:vi.fn(async () => ({ user:{ uid:'owner' } })), signOut:vi.fn(async () => {}) };
