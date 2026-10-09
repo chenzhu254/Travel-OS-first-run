@@ -56,7 +56,7 @@ function guard(rootDir) {
   console.log(`Firebase deploy boundary verified for ${process.env.GCLOUD_PROJECT}.`);
 }
 
-function deploy(rootDir, only = 'database') {
+function deploy(rootDir) {
   const approvedProject = readApprovedProject(rootDir);
   const projectId = assertDeployBoundary({
     targetProject:approvedProject,
@@ -64,7 +64,7 @@ function deploy(rootDir, only = 'database') {
     blockedProjects:readBlockedProjects(rootDir),
   });
   const command = process.platform === 'win32' ? 'npx.cmd' : 'npx';
-  const result = spawnSync(command, ['--yes', 'firebase-tools@15.11.0', 'deploy', '--only', only, '--project', projectId], {
+  const result = spawnSync(command, ['--yes', 'firebase-tools@15.11.0', 'deploy', '--only', 'database', '--project', projectId], {
     cwd:rootDir,
     stdio:'inherit',
     shell:false,
@@ -79,8 +79,7 @@ function main() {
   if (command === 'configure') return configure(rootDir, args);
   if (command === 'guard') return guard(rootDir);
   if (command === 'deploy') return deploy(rootDir);
-  if (command === 'deploy-functions') return deploy(rootDir, 'functions');
-  throw new Error('Usage: configure --project <id> | guard | deploy | deploy-functions');
+  throw new Error('Usage: configure --project <id> | guard | deploy');
 }
 
 const isMain = process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url);

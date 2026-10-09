@@ -2,7 +2,7 @@
 
 ## Status
 
-Accepted
+Superseded by [ADR-006](006-spark-free-only.md)
 
 ## Date
 

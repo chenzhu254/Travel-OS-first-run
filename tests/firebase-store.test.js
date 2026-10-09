@@ -3,6 +3,7 @@ import { vi } from 'vitest';
 import { createItem, createTrip, touchTrip } from '../src/domain/trip.js';
 import { commitIfRevisionMatches, FirebaseTripStore, normalizeFirebaseTrip, parseFirebaseTrip, serializeFirebaseTrip } from '../src/storage/firebase-store.js';
 
+
 function snapshot(value) {
   return {
     val:() => value,

@@ -1,6 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { itemMapUrl, mapSearchUrl, parkingMapUrl } from '../src/providers/maps.js';
-import { mapsPlaceUrl, parseMapsBrowserKey } from '../src/providers/google-maps.js';
+import { itemMapUrl, mapSearchUrl, parkingMapUrl, routeMapUrl } from '../src/providers/maps.js';
 
 describe('Google Maps external navigation', () => {
   it('uses an exact destination link and keeps parking navigation separate', () => {
@@ -15,13 +14,14 @@ describe('Google Maps external navigation', () => {
   it('rejects an empty navigation query', () => {
     expect(() => mapSearchUrl('   ')).toThrow(/地點/);
   });
-  it('accepts only a Browser Key shape and builds a Google Place URL', () => {
-    const key = `AIza${'b'.repeat(35)}`;
-    expect(parseMapsBrowserKey(` ${key} `)).toBe(key);
-    expect(parseMapsBrowserKey('')).toBe('');
-    expect(() => parseMapsBrowserKey('secret-server-key')).toThrow(/Browser Key/);
-    const url = mapsPlaceUrl({ id:'place-id', displayName:'Sample park', formattedAddress:'Sample City' });
-    expect(url).toContain('query_place_id=place-id');
-    expect(url).toContain('query=Sample+City');
+  it('opens encoded driving and walking directions without a key', () => {
+    const origin = { title:'A & B' }, destination = { location:'City Hall', title:'Hall' };
+    const url = new URL(routeMapUrl(origin, destination, 'walking'));
+    expect(url.searchParams.get('origin')).toBe('A & B');
+    expect(url.searchParams.get('destination')).toBe('City Hall');
+    expect(url.searchParams.get('travelmode')).toBe('walking');
+    expect(new URL(routeMapUrl(origin, destination)).searchParams.get('travelmode')).toBe('driving');
+    expect(url.searchParams.has('key')).toBe(false);
+    expect(() => routeMapUrl(origin, destination, 'invalid')).toThrow();
   });
 });

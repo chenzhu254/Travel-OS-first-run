@@ -1,5 +1,13 @@
 # Changelog
 
+## Unreleased — 2026-10-09
+
+- 設定與驗收改以 Spark 免費方案為準；移除 Browser Key、Places、付費 Functions 與部署指令。
+- 相鄰安排改用免 Key Google Maps 開車／步行路線，保留景點、備註與獨立停車場連結。
+- 完整移除天氣計算、預報與外部查詢入口。
+- 舊版記住的 Google Maps Key 自動丟棄，Firebase 設定仍可沿用。
+- 明確說明 Spark 免費額度及本機備份替代方式，不保證無限雲端使用。
+
 本專案遵循語意化版本概念；beta 期間可能調整資料結構，變更會記錄於此。
 
 ## Unreleased
