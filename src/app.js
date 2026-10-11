@@ -7,7 +7,7 @@ import { isSharedPublicDemo, shouldOpenCloudOnboarding } from './config/deployme
 import { FirebaseTripStore } from './storage/firebase-store.js';
 import { prepareStoreSwitch } from './storage/store-switch.js';
 import { localStorageKey } from './storage/browser-scope.js';
-import { itemMapUrl, parkingMapUrl, routeMapUrl } from './providers/maps.js';
+import { itemMapUrl, parkingMapUrl, routeMapUrl, dayRouteSections } from './providers/maps.js';
 import { nextStop } from './domain/next-stop.js';
 import { formatFlightSchedule } from './domain/flight-schedule.js';
 
@@ -142,6 +142,7 @@ function render() {
   tripSelect.replaceChildren(...state.trips.map((entry) => new Option(entry.title, entry.id, false, entry.id === trip.id)));
   $('#day-tabs').innerHTML = dates.map((date, index) => `<button class="day-tab" type="button" data-date="${date}" role="tab" aria-selected="${date === state.selectedDate}"><small>DAY ${index + 1}</small><strong>${formatDay(date)}</strong></button>`).join('');
   const items = trip.items.filter((item) => item.date === state.selectedDate).sort((a,b) => (a.startTime || '99:99').localeCompare(b.startTime || '99:99'));
+  $('#day-routes').innerHTML = dayRouteSections(items, trip.groups).map(({ name, segments }) => `<div class="day-route-group"><strong>${escapeHtml(name)}</strong>${segments.length ? segments.map((segment, index) => `<div>${segment.url ? `<a href="${escapeHtml(segment.url)}" target="_blank" rel="noopener noreferrer">${escapeHtml(name)}${segment.titles.length === 1 ? '地點' : '今日開車路線'}${segments.length > 1 ? ` · 第 ${index + 1} 段` : ''} ↗</a>` : '<p>地址過長，無法建立此段 Google Maps 連結；請使用各站地圖入口。</p>'}<small>${segment.titles.map(escapeHtml).join(' → ')}</small></div>`).join('') : '<small>今天尚無可導航的地點</small>'}</div>`).join('');
   const upcoming = nextStop(items, state.selectedDate, trip.timeZone);
   $('#next-stop').hidden = !upcoming;
   if (upcoming) {

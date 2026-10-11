@@ -1,6 +1,6 @@
 # ADR-006: Spark-only setup and keyless Maps
 
-Status: Accepted (2026-10-09). Supersedes ADR-005.
+Status: Superseded for product scope by ADR-007 (2026-10-12). Historical implementation record only; the user did not authorize removing non-weather features. Previously marked Accepted (2026-10-09), superseding ADR-005.
 
 The product must be usable without payment information or paid-service setup. Keep Firebase Email/password Authentication and Realtime Database with server-enforced membership Rules on Spark, and IndexedDB plus JSON backups. Spark has finite quotas; do not promise unlimited cloud availability or infer billing status from successful login.
 
