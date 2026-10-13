@@ -89,5 +89,5 @@
 - 79 項單元測試及 build 通過。新測試包含備份／Firebase 序列化保留欄位、無效時間與交通輸入、原 ID 編輯、分組衝突、跨日與本機並行寫入。
 - 真實本機瀏覽器：編輯後仍為 3 筆安排，沒有重複新增；跨午夜未選隔日會被拒絕，修正後顯示 60 分鐘；重整保留時間／備註／停車；刪除取消保留、確認刪除重整後減為 2 筆；下載完整備份再匯入恢復 3 筆及新欄位。
 - 真實兩分頁：第一分頁更新成功，第二分頁被拒，未儲存草稿留在表單；重整證實第一筆修改沒有被覆蓋。390×844 視窗的內容寬及 scrollWidth 均為 375。
-- 新時間欄位需新版 Rules。已新增 editor 可寫／viewer 不可寫、無效時間／交通欄位拒絕的 Emulator 測試；本機 Java 17 不符合 firebase-tools 的 Java 21 要求，改由 PR CI 執行。CI 結果確認後另行記錄，尚未部署真實測試專案規則。
+- 新時間欄位需新版 Rules。已新增 editor 可寫／viewer 不可寫、無效時間／交通欄位拒絕的 Emulator 測試；本機 Java 17 不符合 firebase-tools 的 Java 21 要求，改由 PR CI 執行。[GitHub CI #38410543055](https://github.com/chenzhu254/Travel-OS-first-run/actions/runs/38410543055) 已於本輪確認成功（程式 commit `e38a305`）：check、依賴稽核與 Rules Emulator 全部通過；尚未部署真實測試專案規則。
 - Places、自動路程、分組停車、租車、收藏、景點庫、獨立費用及成員 UI 仍未完成；本輪未更改 Google 設定或計費方案。
