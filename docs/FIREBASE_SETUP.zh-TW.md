@@ -191,4 +191,4 @@ const firebaseConfig = {
 - **PERMISSION_DENIED / Rules 拒絕存取**：確認 Realtime Database →「規則」已發布 Travel OS Rules，而不是鎖定模式原始規則或測試模式。
 - **看到 Blaze / Billing**：Travel OS 不需要 Billing；請確認 Firebase project 維持 Spark。若已有計費帳戶連結，請先由擁有者檢查方案與既有資源。
 
-完成這一頁後，可閱讀 [Google Maps 與 Google Cloud 設定](GOOGLE_CLOUD_SETUP.zh-TW.md)；免 Key 外部導航不需另外設定 Google Cloud，不提供付費 Places、API 自動路程或天氣功能。
+完成這一頁後，可閱讀 [Google Maps 與 Google Cloud 設定](GOOGLE_CLOUD_SETUP.zh-TW.md)。免 Key 外部導航不需另外設定 Google Cloud；Places 與網站內路程計算仍列在[待恢復功能](FEATURE_PARITY_AUDIT.zh-TW.md)，不能以外部導航代替其驗收。天氣依產品決定移除。

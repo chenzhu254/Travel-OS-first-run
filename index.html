@@ -59,6 +59,11 @@
               <h3 id="next-stop-heading"></h3>
               <div id="next-stop-details"></div>
             </section>
+            <details class="day-routes-panel">
+              <summary>各群組今日路線</summary>
+              <p class="field-help">包含共同安排與該群組的地點，依時間排序。長路線分段開啟，前段終點會接續下一段起點。</p>
+              <div id="day-routes"></div>
+            </details>
             <ol id="timeline" class="timeline"></ol>
             <div id="timeline-empty" class="empty-state">
               <span aria-hidden="true">＋</span><h3>這一天還沒有安排</h3><p>加入景點、航班、住宿或交通，開始排出順路的一天。</p>
@@ -106,8 +111,12 @@
 
     <dialog id="item-dialog">
       <form id="item-form" method="dialog" class="dialog-form">
-        <header><p class="eyebrow">ADD TO DAY</p><h2>新增安排</h2></header>
+        <header><p class="eyebrow">ITINERARY</p><h2 id="item-dialog-title">新增安排</h2></header>
+        <label>行程日期<input name="date" type="date" required /></label>
         <div class="field-pair"><label>類型<select name="type"><option value="place">景點</option><option value="meal">餐飲</option><option value="stay">住宿</option><option value="flight">航班</option><option value="transport">交通</option><option value="other">其他</option></select></label><label>開始時間<input name="startTime" type="time" /></label></div>
+        <div id="end-fields" class="field-pair"><label>結束日期（跨日時填寫）<input name="endDate" type="date" /></label><label>結束時間<input name="endTime" type="time" /></label></div>
+        <div class="field-pair"><label>前往下一站交通方式<select name="transitMode"><option value="">未設定</option><option value="driving">開車</option><option value="walking">步行</option><option value="transit">大眾交通</option><option value="other">其他</option></select></label><label>交通分鐘（手動）<input name="transitMinutes" type="number" min="0" max="1440" step="1" /></label></div>
+        <p class="field-help">交通時間為手動估計。一般安排依旅程時區檢查重疊；航班依起降時區顯示，不納入這項衝突檢查。</p>
         <label>名稱<input name="title" maxlength="100" required placeholder="要去哪裡或做什麼？" /></label>
         <label>地址／位置<input name="location" maxlength="200" placeholder="可直接手動輸入" /></label>
         <label>目的地 Google Maps 連結（選填）<input name="mapsUrl" type="url" maxlength="600" placeholder="https://maps.app.goo.gl/..." /></label>
@@ -129,7 +138,8 @@
           <label>停車備註<textarea name="parkingNotes" maxlength="300" rows="2" placeholder="例：入口在後方、限高資訊"></textarea></label>
         </fieldset>
         <p class="form-error" role="alert"></p>
-        <footer><button class="secondary" data-close type="button">取消</button><button class="primary" value="default">加入行程</button></footer>
+        <p id="item-delete-warning" class="warning-card" hidden>刪除後無法從此畫面復原；請確認刪除的是這筆安排。</p>
+        <footer><button id="item-delete-button" class="secondary" type="button" hidden>刪除安排</button><button class="secondary" data-close type="button">取消</button><button id="item-save-button" class="primary" value="default">加入行程</button></footer>
       </form>
     </dialog>
 
