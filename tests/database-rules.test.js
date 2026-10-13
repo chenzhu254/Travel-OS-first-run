@@ -31,6 +31,16 @@ beforeEach(async () => {
 afterAll(async () => environment?.cleanup());
 
 describe('Realtime Database tenant isolation', () => {
+  it('allows editor schedule updates and removal but rejects invalid intervals and viewer changes', async () => {
+    const editorData=ref(environment.authenticatedContext('editor').database(),'trips/trip-a/data');
+    const item={id:'item-a',date:'2027-01-01',type:'place',title:'Evening',currency:'USD',startTime:'23:00',endDate:'2027-01-02',endTime:'01:00',transitMode:'walking',transitMinutes:15};
+    await assertSucceeds(update(editorData,{items:{'item-a':item},revision:2}));
+    for (const change of [{endDate:'2027-01-01'}, {endDate:'2027-01-03'}, {endTime:'26:00'}, {endTime:null}, {startTime:''}, {transitMinutes:-1}, {transitMinutes:1.5}, {transitMode:'fly'}, {transitMode:null}]) {
+      await assertFails(update(editorData,{items:{'item-a':{...item,...change}},revision:3}));
+    }
+    await assertFails(update(ref(environment.authenticatedContext('viewer').database(),'trips/trip-a/data'),{items:null,revision:3}));
+    await assertSucceeds(update(editorData,{items:null,revision:3}));
+  });
   it('denies unauthenticated and outsider trip reads', async () => {
     await assertFails(get(ref(environment.unauthenticatedContext().database(), 'trips/trip-a')));
     await assertFails(get(ref(environment.authenticatedContext('outsider').database(), 'trips/trip-a')));

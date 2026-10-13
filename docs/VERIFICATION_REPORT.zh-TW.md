@@ -2,6 +2,8 @@
 
 # Travel OS 首次設定與行程功能驗證報告
 
+2026-10-13 追加：編輯、跨午夜、手動交通與分組衝突的本機驗證見[功能核對報告第二項修復](FEATURE_PARITY_AUDIT.zh-TW.md)。此結果不代表雲端 Rules 已部署或 Google 功能已恢復。
+
 首次驗證日期：2026-09-29；最新追加驗證：2026-10-08（Asia/Taipei）。下方初次結果保留為歷史紀錄，最新結果以追加紀錄為準。
 
 驗證範圍：獨立的 [Travel-OS-first-run repository](https://github.com/chenzhu254/Travel-OS-first-run) 與[測試網站](https://chenzhu254.github.io/Travel-OS-first-run/)。沒有修改原作者的 repository，也沒有向原作者的 Firebase 專案寫入。本文不記錄帳號密碼、Firebase Web config、API Key 或資料庫識別資料。
